@@ -2,6 +2,7 @@
 #define VECTOR_HPP
 
 #include <cmath>
+#include <iostream>
 #include "math_material.hpp"
 
 // Class Vector
@@ -81,6 +82,16 @@ class Vector {
     // == operator
     bool operator==(const Vector& v) const { return IsEqual(x, v.x) && IsEqual(y, v.y) && IsEqual(z, v.z); }
     bool operator!=(const Vector& v) const { return !(*this == v); }
+    // > operator
+    bool operator>(const Vector& v) const { return x > v.x && y > v.y && z > v.z; }
+    // >= operator
+    bool operator>=(const Vector& v) const { return x >= v.x && y >= v.y && z >= v.z; }
+    // < operator
+    bool operator<(const Vector& v) const { return x < v.x && y < v.y && z < v.z; }
+    // <= operator
+    bool operator<=(const Vector& v) const { return x <= v.x && y <= v.y && z <= v.z; }
+    // Normalized
+    Vector Normalized() const { return *this / Length(); }
 };
 
 // _* operator
@@ -105,4 +116,13 @@ inline void CoordinateSystem(const Vector& v1, Vector* v2, Vector* v3) {
     }
     *v3 = Cross(v1, *v2);
 }
+// Faceforward
+inline Vector Faceforward(const Vector& v1, const Vector& v2) { return (Dot(v1, v2) < 0) ? -v1 : v1; }
+// cout
+inline std::ostream& operator<<(std::ostream& os, const Vector& v) {
+    os << "Vector[" << v.x << ", " << v.y << ", " << v.z << "]";
+    return os;
+}
+
+#define Normal Vector
 #endif  // VECTOR_HPP

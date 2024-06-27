@@ -14,11 +14,20 @@ class Point {
         p = v;
     }
     // + operator
+    // 1. Point + Vector = Point
+    // 2, Point + Point = Point maybe useful in weighted sum
     Point operator+(const Vector& v) const {
         return Point(p + v);
     }
+    Point operator+(const Point& p2) const {
+        return Point(p + p2.p);
+    }
     Point& operator+=(const Vector& v) {
         p += v;
+        return *this;
+    }
+    Point& operator+=(const Point& p2) {
+        p += p2.p;
         return *this;
     }
     // - operator
@@ -66,6 +75,22 @@ class Point {
     bool operator!=(const Point& p2) const {
         return p != p2.p;
     }
+    // > operator
+    bool operator>(const Point& p2) const {
+        return p > p2.p;
+    }
+    // >= operator
+    bool operator>=(const Point& p2) const {
+        return p >= p2.p;
+    }
+    // < operator
+    bool operator<(const Point& p2) const {
+        return p < p2.p;
+    }
+    // <= operator
+    bool operator<=(const Point& p2) const {
+        return p <= p2.p;
+    }
 };
 
 // _* operator
@@ -80,4 +105,18 @@ inline float Distance(const Point& p1, const Point& p2) {
 inline float DistanceSquared(const Point& p1, const Point& p2) {
     return (p1.p - p2.p).LengthSquared();
 }
+// PMin: select the minimum value of each component
+inline Point Min(const Point& p1, const Point& p2) {
+    return Point(Min(p1.p[0], p2.p[0]), Min(p1.p[1], p2.p[1]), Min(p1.p[2], p2.p[2]));
+}
+// PMax: select the maximum value of each component
+inline Point Max(const Point& p1, const Point& p2) {
+    return Point(Max(p1.p[0], p2.p[0]), Max(p1.p[1], p2.p[1]), Max(p1.p[2], p2.p[2]));
+}
+// cout
+inline std::ostream& operator<<(std::ostream& os, const Point& p) {
+    os << p.p;
+    return os;
+}
+
 #endif

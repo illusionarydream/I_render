@@ -1,12 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
-# CUDA
-find_package(CUDA REQUIRED)
-include_directories(${CUDA_INCLUDE_DIRS})
-target_link_libraries(MyProject ${CUDA_LIBRARIES})
-
 # task name
-project(MyProject)
+project(I_render)
 
 # C++ standard
 set(CMAKE_CXX_STANDARD 14)
@@ -18,4 +13,4 @@ file(GLOB SOURCES "src/*.cpp")
 include_directories("include")
 
 # build executable
-add_executable(MyProject ${SOURCES})
+add_executable(I_render ${SOURCES})
