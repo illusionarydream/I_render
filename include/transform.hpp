@@ -3,4 +3,7 @@
 
 #include "point.hpp"
 
+class Transform {
+};
+
 #endif

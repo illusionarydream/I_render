@@ -1,57 +1,43 @@
-#include "bbox.hpp"
+// main.cpp
 #include <iostream>
+#include "Matrix4x4.hpp"
 
 int main() {
-    // Create points
-    Point p1(1, 2, 3);
-    Point p2(4, 5, 6);
+    // Test default constructor
+    Matrix4x4 mat1;
+    std::cout << "Default constructor: " << std::endl
+              << mat1 << std::endl;
 
-    // Create bounding box
-    Bbox bbox(p1, p2);
+    // Test constructor with array
+    float arr[4][4] = {{1, 2, 3, 4}, {5, 6, 7, 8}, {9, 10, 11, 12}, {13, 14, 15, 16}};
+    Matrix4x4 mat2(arr);
+    std::cout << "Constructor with array: " << std::endl
+              << mat2 << std::endl;
 
-    // Test Union
-    Point p3(7, 8, 9);
-    Bbox unionBbox = bbox.Union(p3);
-    std::cout << "Union Bbox pMin: " << unionBbox[0] << ", pMax: " << unionBbox[1] << std::endl;
+    // Test constructor with individual elements
+    Matrix4x4 mat3(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    std::cout << "Constructor with individual elements: " << std::endl
+              << mat3 << std::endl;
 
-    // Test Overlaps
-    Bbox bbox2(Point(5, 6, 7), Point(8, 9, 10));
-    std::cout << "Overlaps: " << (bbox.Overlaps(bbox2) ? "true" : "false") << std::endl;
+    // Test multiplication
+    Matrix4x4 mat4 = mat2 * mat3;
+    std::cout << "Multiplication: " << std::endl
+              << mat4 << std::endl;
 
-    // Test Inside
-    Point p4(2, 3, 4);
-    std::cout << "Inside: " << (bbox.Inside(p4) ? "true" : "false") << std::endl;
+    // Test transpose
+    Matrix4x4 mat5 = mat4.Transpose();
+    std::cout << "Transpose: " << std::endl
+              << mat5 << std::endl;
 
-    // Test Expand
-    bbox.Expand(1.0);
-    std::cout << "Expanded Bbox pMin: " << bbox[0] << ", pMax: " << bbox[1] << std::endl;
-
-    // Test SurfaceArea
-    std::cout << "Surface Area: " << bbox.SurfaceArea() << std::endl;
-
-    // Test Volume
-    std::cout << "Volume: " << bbox.Volume() << std::endl;
-
-    // Test MaximumExtent
-    std::cout << "Maximum Extent: " << bbox.MaximumExtent() << std::endl;
-
-    // Test SetpMin and SetpMax
-    bbox.SetpMin(Point(0, 0, 0));
-    bbox.SetpMax(Point(10, 10, 10));
-    std::cout << "Set Bbox pMin: " << bbox[0] << ", pMax: " << bbox[1] << std::endl;
-
-    // Test Lerp
-    Vector t(0.5, 0.5, 0.5);
-    std::cout << "Lerp: " << bbox.Lerp(t) << std::endl;
-
-    // Test Offset
-    std::cout << "Offset: " << bbox.Offset(p4) << std::endl;
-
-    // Test BoundingSphere
-    Point c;
-    float rad;
-    bbox.BoundingSphere(&c, &rad);
-    std::cout << "Bounding Sphere center: " << c << ", radius: " << rad << std::endl;
+    // Test inverse
+    mat5(0, 0) = 1, mat5(0, 1) = 2, mat5(0, 2) = 3, mat5(0, 3) = 4;
+    mat5(1, 0) = 2, mat5(1, 1) = 3, mat5(1, 2) = 1, mat5(1, 3) = 2;
+    mat5(2, 0) = 1, mat5(2, 1) = 1, mat5(2, 2) = 1, mat5(2, 3) = -1;
+    mat5(3, 0) = 1, mat5(3, 1) = 0, mat5(3, 2) = -2, mat5(3, 3) = -6;
+    Matrix4x4 mat6 = mat5.Inverse();
+    std::cout << "Determinant: " << mat5.Determinant() << std::endl;
+    std::cout << "Inverse: " << std::endl
+              << mat6 << std::endl;
 
     return 0;
 }
