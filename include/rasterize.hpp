@@ -1,0 +1,4 @@
+#ifndef RASTERIZE_HPP
+#define RASTERIZE_HPP
+
+#endif  // RASTERIZE_HPP

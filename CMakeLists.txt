@@ -11,6 +11,7 @@ file(GLOB SOURCES "src/*.cpp")
 
 # All headers
 include_directories("include")
+include_directories("eigen-3.4.0")
 
 # build executable
 add_executable(I_render ${SOURCES})
