@@ -1,7 +1,18 @@
 #include "raytrace.cuh"
 
+__global__ void initCurandStates(curandState *state, int seed, int width, int height) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < width && y < height) {
+        int idx = y * width + x;
+        curand_init(seed, idx, 0, &state[idx]);
+    }
+}
+
 __global__ void generateRayKernel(const M4f *Inv_Extrinsic,
                                   const M3f *Inv_Intrinsic,
+                                  const V4f *camera_pos,
                                   const int width,
                                   const int height,
                                   Ray *rays) {
@@ -12,11 +23,11 @@ __global__ void generateRayKernel(const M4f *Inv_Extrinsic,
         // generate ray from camera to the pixel (x, y)
         V3f p_film((x + 0.5f) / width, (y + 0.5f) / height, 1.0f);
         V3f p_camera3 = (*Inv_Intrinsic) * p_film;
-        auto p_camera = V4f(p_camera3[0], p_camera3[1], p_camera3[2], 1.0f);
+        auto p_camera = V4f(p_camera3[0], p_camera3[1], -1.0f, 1.0f);
         V4f p_world = (*Inv_Extrinsic) * p_camera;
 
         // set the origin and direction of the ray
-        rays[y * width + x].orig = Inv_Extrinsic->col(3);
+        rays[y * width + x].orig = *camera_pos;
         rays[y * width + x].dir = normalize(p_world - rays[y * width + x].orig);
     }
 }
@@ -28,7 +39,14 @@ __global__ void raytrace(const Mesh *mesh,
                          const Ray *rays,
                          V3f *image,
                          // other parameters
-                         bool if_depthmap = false) {
+                         bool if_depthmap,
+                         bool if_normalmap,
+                         bool if_pathtracing,
+                         // for path tracing
+                         float russian_roulette,
+                         int samples_per_pixel,
+                         // random seed support
+                         curandState *state) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -45,11 +63,113 @@ __global__ void raytrace(const Mesh *mesh,
 
             // if hit, set the color of the pixel
             if (hit) {
-                auto col = sigmoid((t - 2.0f) * 20);
+                auto col = sigmoid(t);
                 image[y * width + x] = V3f(col, col, col);
             } else {
                 image[y * width + x] = V3f(0.0f, 0.0f, 0.0f);
             }
+        }
+    }
+
+    // * output the normal map
+    if (if_normalmap) {
+        if (x < width && y < height) {
+            // ray tracing
+            // for each ray, find the intersection with the mesh
+            float t = MAX;
+            int idx = -1;
+
+            // find the intersection with the mesh
+            bool hit = (*mesh).hitting(rays[y * width + x], t, idx);
+
+            // if hit, set the color of the pixel
+            if (hit) {
+                V4f collsion = rays[y * width + x](t);
+                V4f normal = toV4f((*mesh).get_triangle(idx).interpolate_normal(collsion.toV3f()));
+                normal = normalize(normal);
+                normal = (normal + V4f(1.0f, 1.0f, 1.0f, 1.0f)) / 2.0f;
+
+                image[y * width + x] = V3f(normal[0], normal[1], normal[2]);
+            } else {
+                image[y * width + x] = V3f(0.0f, 0.0f, 0.0f);
+            }
+        }
+    }
+
+    // * output the path tracing
+    if (if_pathtracing) {
+        if (x < width && y < height) {
+            int pix_idx = y * width + x;
+
+            auto accum_col = V4f(0.0f, 0.0f, 0.0f, 1.0f);
+
+            // iterate over the samples
+            for (int sample_idx = 0; sample_idx < samples_per_pixel; sample_idx++) {
+                // ray tracing
+                auto temp_col = V4f(1.0f, 1.0f, 1.0f, 1.0f);
+                auto temp_ray = rays[y * width + x];
+
+                while (true) {
+                    // find the intersection with the mesh
+                    float t = MAX;
+                    int idx = -1;
+
+                    // find the intersection with the mesh
+                    bool hit = (*mesh).hitting(temp_ray, t, idx);
+
+                    // if hit, set the color of the pixel
+                    if (hit) {
+                        // get the intersection point
+                        V4f collsion = temp_ray(t);
+                        Triangle collsion_triangle = (*mesh).get_triangle(idx);
+                        V4f collision_normal = toV4f(collsion_triangle.interpolate_normal(collsion.toV3f()));
+                        collision_normal = normalize(collision_normal);
+
+                        bool if_light = collsion_triangle.mat.if_light;
+
+                        // get the new ray
+                        if (if_light) {
+                            // set the color of the pixel
+                            temp_col = temp_col * collsion_triangle.mat.albedo;
+                            break;
+                        } else {
+                            // russian roulette
+                            if (random_float(&state[pix_idx]) < russian_roulette) {
+                                // get the new light ray
+                                V4f albedo;
+                                Ray new_ray;
+                                collsion_triangle.mat.scatter(temp_ray,
+                                                              collsion,
+                                                              collision_normal,
+                                                              new_ray,
+                                                              albedo,
+                                                              &state[pix_idx]);
+                                // calculate n * wi
+                                float cos_theta = dot(collision_normal, new_ray.dir);
+                                // set the color of the pixel
+                                temp_col = temp_col * albedo * cos_theta / russian_roulette;
+                                // set the new ray
+                                temp_ray.dir = new_ray.dir;
+                                temp_ray.orig = collsion + collision_normal * MIN_surface;
+
+                            } else {
+                                // set the color of the pixel
+                                temp_col = V4f(0.0f, 0.0f, 0.0f, 1.0f);
+                                break;
+                            }
+                        }
+
+                    } else {
+                        // set the color of the pixel
+                        temp_col = V4f(0.0f, 0.0f, 0.0f, 1.0f);
+                        break;
+                    }
+                }
+                accum_col = accum_col + temp_col / samples_per_pixel;
+            }
+
+            // set the color of the pixel
+            image[y * width + x] = V3f(accum_col[0], accum_col[1], accum_col[2]);
         }
     }
 }

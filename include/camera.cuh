@@ -11,15 +11,22 @@
 class Camera {
    public:
     // * data members
+    V4f cam_pos;
     M3f Intrinsics;
     M4f Extrinsics;
     M3f Inv_Intrinsics;
     M4f Inv_Extrinsics;
 
     bool if_depthmap = false;
+    bool if_normalmap = false;
+    bool if_pathtracing = false;
+
+    float russian_roulette = 0.98f;
+    int samples_per_pixel = 200;
 
     // * constructors
     Camera() {
+        cam_pos = V4f(0.0f, 0.0f, 0.0f, 1.0f);
         Intrinsics.reset(1.0f, 0.0f, 0.5f,
                          0.0f, 1.0f, 0.5f,
                          0.0f, 0.0f, 1.0f);
@@ -67,25 +74,29 @@ class Camera {
         // cam_up: camera up
         // camera coordinate system
         V4f z_cam = normalize(cam_lookat - cam_pos);  // lookat the negative z direction
-        V4f x_cam = normalize(cross(cam_up, z_cam));  // x_cam = cam_up(y) x z_cam
-        V4f y_cam = normalize(cross(z_cam, x_cam));   // y_cam = z_cam x x_cam
+        V4f y_cam = normalize(cam_up);
+        V4f x_cam = normalize(cross(z_cam, y_cam));
 
-        Inv_Extrinsics.reset(x_cam[0], x_cam[1], x_cam[2], dot(x_cam, cam_pos) * -1.0,
-                             y_cam[0], y_cam[1], y_cam[2], dot(y_cam, cam_pos) * -1.0,
-                             z_cam[0], z_cam[1], z_cam[2], dot(z_cam, cam_pos) * -1.0,
-                             0.0f, 0.0f, 0.0f, 1.0f);
+        Extrinsics.reset(x_cam[0], x_cam[1], x_cam[2], dot(x_cam, cam_pos) * -1.0,
+                         y_cam[0], y_cam[1], y_cam[2], dot(y_cam, cam_pos) * -1.0,
+                         -z_cam[0], -z_cam[1], -z_cam[2], dot(z_cam, cam_pos),
+                         0.0f, 0.0f, 0.0f, 1.0f);
 
         // get the inverse of Extrinsics
-        Eigen::Matrix4f Inv_Extrinsics_eigen;
-        Inv_Extrinsics_eigen << x_cam[0], x_cam[1], x_cam[2], dot(x_cam, cam_pos) * -1.0,
+        Eigen::Matrix4f Extrinsics_eigen;
+        Extrinsics_eigen << x_cam[0], x_cam[1], x_cam[2], dot(x_cam, cam_pos) * -1.0,
             y_cam[0], y_cam[1], y_cam[2], dot(y_cam, cam_pos) * -1.0,
-            z_cam[0], z_cam[1], z_cam[2], dot(z_cam, cam_pos) * -1.0,
+            -z_cam[0], -z_cam[1], -z_cam[2], dot(z_cam, cam_pos),
             0.0f, 0.0f, 0.0f, 1.0f;
-        auto Extrinsics_eigen = Inv_Extrinsics_eigen.inverse();
-        Extrinsics.reset(Extrinsics_eigen(0, 0), Extrinsics_eigen(0, 1), Extrinsics_eigen(0, 2), Extrinsics_eigen(0, 3),
-                         Extrinsics_eigen(1, 0), Extrinsics_eigen(1, 1), Extrinsics_eigen(1, 2), Extrinsics_eigen(1, 3),
-                         Extrinsics_eigen(2, 0), Extrinsics_eigen(2, 1), Extrinsics_eigen(2, 2), Extrinsics_eigen(2, 3),
-                         Extrinsics_eigen(3, 0), Extrinsics_eigen(3, 1), Extrinsics_eigen(3, 2), Extrinsics_eigen(3, 3));
+
+        auto Inv_Extrinsics_eigen = Extrinsics_eigen.inverse();
+
+        Inv_Extrinsics.reset(Inv_Extrinsics_eigen(0, 0), Inv_Extrinsics_eigen(0, 1), Inv_Extrinsics_eigen(0, 2), Inv_Extrinsics_eigen(0, 3),
+                             Inv_Extrinsics_eigen(1, 0), Inv_Extrinsics_eigen(1, 1), Inv_Extrinsics_eigen(1, 2), Inv_Extrinsics_eigen(1, 3),
+                             Inv_Extrinsics_eigen(2, 0), Inv_Extrinsics_eigen(2, 1), Inv_Extrinsics_eigen(2, 2), Inv_Extrinsics_eigen(2, 3),
+                             Inv_Extrinsics_eigen(3, 0), Inv_Extrinsics_eigen(3, 1), Inv_Extrinsics_eigen(3, 2), Inv_Extrinsics_eigen(3, 3));
+
+        this->cam_pos = cam_pos;
     }
 
     // store the image
@@ -102,9 +113,10 @@ class Camera {
     }
 
     // generate rays in the world coordinate system
-    void generateRay(const int width,
-                     const int height,
-                     std::vector<Ray>& rays);
+    void generateRay(
+        const int width,
+        const int height,
+        std::vector<Ray>& rays);
 
     // render the scene
     void render_raytrace(const int width,

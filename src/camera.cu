@@ -12,20 +12,23 @@ void Camera::generateRay(const int width, const int height, std::vector<Ray>& ra
     dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
 
     // move the data to the device
+    V4f* d_cam_pos;
     M3f* d_Inv_Intrinsics;
     M4f* d_Inv_Extrinsics;
     Ray* d_rays;
+    cudaMalloc(&d_cam_pos, sizeof(V4f));
     cudaMalloc(&d_rays, rays.size() * sizeof(Ray));
     cudaMalloc(&d_Inv_Intrinsics, sizeof(M3f));
     cudaMalloc(&d_Inv_Extrinsics, sizeof(M4f));
 
+    cudaMemcpy(d_cam_pos, &cam_pos, sizeof(V4f), cudaMemcpyHostToDevice);
     cudaMemcpy(d_Inv_Intrinsics, &Inv_Intrinsics, sizeof(M3f), cudaMemcpyHostToDevice);
     cudaMemcpy(d_Inv_Extrinsics, &Inv_Extrinsics, sizeof(M4f), cudaMemcpyHostToDevice);
 
     printf("Camera::generateRay\n");
 
     // generate ray
-    generateRayKernel<<<grid, block>>>(d_Inv_Extrinsics, d_Inv_Intrinsics, width, height, d_rays);
+    generateRayKernel<<<grid, block>>>(d_Inv_Extrinsics, d_Inv_Intrinsics, d_cam_pos, width, height, d_rays);
 
     // copy the data back
     cudaMemcpy(rays.data(), d_rays, rays.size() * sizeof(Ray), cudaMemcpyDeviceToHost);
@@ -67,6 +70,10 @@ void Camera::render_raytrace(const int width,
 
     printf("Camera::render_raytrace\n");
 
+    curandState* devStates;
+    cudaMalloc((void**)&devStates, width * height * sizeof(curandState));
+    initCurandStates<<<grid, block>>>(devStates, time(0), width, height);
+
     // raytrace
     raytrace<<<grid, block>>>(d_meshes,
                               meshes.get_num_triangles(),
@@ -75,7 +82,17 @@ void Camera::render_raytrace(const int width,
                               d_rays,
                               d_image,
                               // other parameters
-                              if_depthmap);
+                              if_depthmap,
+                              if_normalmap,
+                              if_pathtracing,
+                              // for path tracing
+                              russian_roulette,
+                              samples_per_pixel,
+                              // random seed support
+                              devStates);
+
+    // check the cuda error
+    CHECK_CUDA_ERROR(cudaGetLastError());
 
     // copy the data back
     cudaMemcpy(image.data(), d_image, image.size() * sizeof(V3f), cudaMemcpyDeviceToHost);

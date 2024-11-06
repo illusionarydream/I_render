@@ -1,8 +1,10 @@
-#ifndef MATERIALS_CUH
-#define MATERIALS_CUH
+#ifndef MATH_MATERIALS_CUH
+#define MATH_MATERIALS_CUH
 
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
+#include <curand_kernel.h>
+
 #include <cmath>
 #include "global.cuh"
 #include "error.hpp"
@@ -13,8 +15,9 @@
 #include <thrust/execution_policy.h>
 
 #define MAX 1e6
-#define MAX_mesh 100000
-#define MAX_bound 10
+#define MAX_mesh 10000
+#define MAX_bound 20
+#define MIN_surface 1e-4
 
 class V3f {
    public:
@@ -239,12 +242,25 @@ class M4f {
     }
 };
 
+// toV4f
+__forceinline__ __host__ __device__ V4f toV4f(const V3f &v, float eps = 0.0f) {
+    return V4f(v[0], v[1], v[2], eps);
+}
+
 // cross product
 __forceinline__ __host__ __device__ V3f cross(const V3f &a, const V3f &b) {
     return V3f(a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]);
 }
 __forceinline__ __host__ __device__ V4f cross(const V4f &a, const V4f &b) {
     return V4f(a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0], 0);
+}
+
+// element *
+__forceinline__ __host__ __device__ V3f operator*(const V3f &a, const V3f &b) {
+    return V3f(a[0] * b[0], a[1] * b[1], a[2] * b[2]);
+}
+__forceinline__ __host__ __device__ V4f operator*(const V4f &a, const V4f &b) {
+    return V4f(a[0] * b[0], a[1] * b[1], a[2] * b[2], a[3] * b[3]);
 }
 
 // dot product
@@ -278,6 +294,12 @@ __forceinline__ __host__ __device__ V3f operator*(const V3f &v, float s) {
 __forceinline__ __host__ __device__ V4f operator*(const V4f &v, float s) {
     return V4f(v[0] * s, v[1] * s, v[2] * s, v[3] * s);
 }
+__forceinline__ __host__ __device__ V3f operator*(float s, const V3f &v) {
+    return V3f(v[0] * s, v[1] * s, v[2] * s);
+}
+__forceinline__ __host__ __device__ V4f operator*(float s, const V4f &v) {
+    return V4f(v[0] * s, v[1] * s, v[2] * s, v[3] * s);
+}
 
 // operator +
 __forceinline__ __host__ __device__ V3f operator+(const V3f &a, const V3f &b) {
@@ -301,6 +323,29 @@ __forceinline__ __host__ __device__ V3f normalize(const V3f &v) {
 }
 __forceinline__ __host__ __device__ V4f normalize(const V4f &v) {
     return v / length(v);
+}
+
+// random get 0~1 float
+__forceinline__ __device__ float random_float(curandState *state) {
+    return curand_uniform(state);  // 返回0到1之间的浮点数
+}
+
+// random_in_unit_sphere V3f
+__forceinline__ __device__ V3f random_in_unit_sphere_V3f(curandState *state) {
+    V3f p;
+    do {
+        p = V3f(random_float(state), random_float(state), random_float(state)) * 2.0f - V3f(1.0f, 1.0f, 1.0f);
+    } while (dot(p, p) >= 1.0f);
+    return p;
+}
+
+// ramdom_in_unit_sphere V4f
+__forceinline__ __device__ V4f random_in_unit_sphere_V4f(curandState *state) {
+    V4f p;
+    do {
+        p = V4f(random_float(state), random_float(state), random_float(state), 0.0f) * 2.0f - V4f(1.0f, 1.0f, 1.0f, 0.0f);
+    } while (dot(p, p) >= 1.0f);
+    return p;
 }
 
 class Ray {
