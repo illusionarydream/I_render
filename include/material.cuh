@@ -59,8 +59,9 @@ class Material {
 
     // * member functions
     // for metal material
+    // the v and output are both outgoing
     __host__ __device__ V4f reflect(const V4f &v, const V4f &n) const {
-        V4f reflected = v - n * 2.0f * dot(v, n);
+        V4f reflected = n * 2.0f - v;
         return reflected;
     }
 
@@ -96,7 +97,7 @@ class Material {
             albedo = this->albedo;  // the albedo is the color of the material
             // the scattered Ray is the Ray that starts from the collision point
             // and goes to the reflection point of the incident Ray
-            V4f reflected = reflect(normalize(wi.dir * 1.0f), normal);
+            V4f reflected = reflect(normalize(wi.dir * -1.0f), normal);
             V4f diro = reflected + random_in_unit_sphere_V4f(state) * fuzz;
 
             wo = Ray(collision, normalize(diro));

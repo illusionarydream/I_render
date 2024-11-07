@@ -1,12 +1,21 @@
 #include "raytrace.cuh"
 
-__global__ void initCurandStates(curandState *state, int seed, int width, int height) {
+__global__ void initCurandStates_and_image(curandState *state,
+                                           V3f *image,
+                                           int seed,
+                                           int width,
+                                           int height,
+                                           int samples_per_kernel) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
+    int z = blockIdx.z * blockDim.z + threadIdx.z;
 
-    if (x < width && y < height) {
-        int idx = y * width + x;
-        curand_init(seed, idx, 0, &state[idx]);
+    if (x < width && y < height && z < samples_per_kernel) {
+        int random_idx = y * width * samples_per_kernel + x * samples_per_kernel + z;
+        curand_init(seed, random_idx, 0, &state[random_idx]);
+        if (z == 0) {
+            image[y * width + x] = V3f(0.0f, 0.0f, 0.0f);
+        }
     }
 }
 
@@ -42,13 +51,16 @@ __global__ void raytrace(const Mesh *mesh,
                          bool if_depthmap,
                          bool if_normalmap,
                          bool if_pathtracing,
+                         bool if_more_kernel,
                          // for path tracing
                          float russian_roulette,
                          int samples_per_pixel,
+                         int samples_per_kernel,
                          // random seed support
                          curandState *state) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
+    int z = blockIdx.z * blockDim.z + threadIdx.z;
 
     // * output the depth map
     if (if_depthmap) {
@@ -98,17 +110,25 @@ __global__ void raytrace(const Mesh *mesh,
 
     // * output the path tracing
     if (if_pathtracing) {
-        if (x < width && y < height) {
-            int pix_idx = y * width + x;
-
+        if (x < width && y < height && z < samples_per_kernel) {
+            // pixel index
+            int random_idx = y * width * samples_per_kernel + x * samples_per_kernel + z;
+            // set the color of the pixel
             auto accum_col = V4f(0.0f, 0.0f, 0.0f, 1.0f);
 
+            // more kernel
+            int samples_times = if_more_kernel ? samples_per_pixel / samples_per_kernel : samples_per_pixel;
+
             // iterate over the samples
-            for (int sample_idx = 0; sample_idx < samples_per_pixel; sample_idx++) {
-                // ray tracing
+            for (int sample_idx = 0; sample_idx < samples_times; sample_idx++) {
+                // set the color and the ray
                 auto temp_col = V4f(1.0f, 1.0f, 1.0f, 1.0f);
                 auto temp_ray = rays[y * width + x];
 
+                // give the ray a little offset
+                temp_ray.dir = normalize(temp_ray.dir + LITTLE_FUZZ * random_in_unit_sphere_V4f(&state[random_idx]));
+
+                // recursive ray tracing
                 while (true) {
                     // find the intersection with the mesh
                     float t = MAX;
@@ -134,7 +154,7 @@ __global__ void raytrace(const Mesh *mesh,
                             break;
                         } else {
                             // russian roulette
-                            if (random_float(&state[pix_idx]) < russian_roulette) {
+                            if (random_float(&state[random_idx]) < russian_roulette) {
                                 // get the new light ray
                                 V4f albedo;
                                 Ray new_ray;
@@ -143,7 +163,7 @@ __global__ void raytrace(const Mesh *mesh,
                                                               collision_normal,
                                                               new_ray,
                                                               albedo,
-                                                              &state[pix_idx]);
+                                                              &state[random_idx]);
                                 // calculate n * wi
                                 float cos_theta = dot(collision_normal, new_ray.dir);
                                 // set the color of the pixel
@@ -169,7 +189,13 @@ __global__ void raytrace(const Mesh *mesh,
             }
 
             // set the color of the pixel
-            image[y * width + x] = V3f(accum_col[0], accum_col[1], accum_col[2]);
+            if (if_more_kernel) {
+                atomicAdd(&image[y * width + x][0], accum_col[0]);
+                atomicAdd(&image[y * width + x][1], accum_col[1]);
+                atomicAdd(&image[y * width + x][2], accum_col[2]);
+            } else {
+                image[y * width + x] = V3f(accum_col[0], accum_col[1], accum_col[2]);
+            }
         }
     }
 }

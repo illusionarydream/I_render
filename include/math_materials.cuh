@@ -18,6 +18,7 @@
 #define MAX_mesh 10000
 #define MAX_bound 20
 #define MIN_surface 1e-4
+#define LITTLE_FUZZ 5e-4
 
 class V3f {
    public:

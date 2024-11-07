@@ -20,9 +20,11 @@ class Camera {
     bool if_depthmap = false;
     bool if_normalmap = false;
     bool if_pathtracing = false;
+    bool if_more_kernel = false;
 
-    float russian_roulette = 0.98f;
-    int samples_per_pixel = 200;
+    float russian_roulette = 0.9f;
+    int samples_per_pixel = 500;
+    int samples_per_kernel = 20;
 
     // * constructors
     Camera() {
