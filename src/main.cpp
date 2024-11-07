@@ -48,7 +48,7 @@ int main() {
 
     std::vector<V3f> image(IMAGE_HEIGHT * IMAGE_WIDTH);
     camera.render_raytrace(IMAGE_HEIGHT, IMAGE_WIDTH, meshes, rays, image);
-    camera.storeImage("output.jpg", IMAGE_WIDTH, IMAGE_HEIGHT, image);
+    camera.storeImage("/home/illusionary/文档/计算机图形学/I_render/output/output.jpg", IMAGE_WIDTH, IMAGE_HEIGHT, image);
 
     return 0;
 }
