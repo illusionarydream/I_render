@@ -64,7 +64,7 @@ __global__ void raytrace(const Mesh *mesh,
 
     // * output the depth map
     if (if_depthmap) {
-        if (x < width && y < height) {
+        if (x < width && y < height && z < samples_per_kernel) {
             // ray tracing
             // for each ray, find the intersection with the mesh
             float t = MAX;
@@ -85,7 +85,7 @@ __global__ void raytrace(const Mesh *mesh,
 
     // * output the normal map
     if (if_normalmap) {
-        if (x < width && y < height) {
+        if (x < width && y < height && z < samples_per_kernel) {
             // ray tracing
             // for each ray, find the intersection with the mesh
             float t = MAX;
@@ -113,6 +113,7 @@ __global__ void raytrace(const Mesh *mesh,
         if (x < width && y < height && z < samples_per_kernel) {
             // pixel index
             int random_idx = y * width * samples_per_kernel + x * samples_per_kernel + z;
+
             // set the color of the pixel
             auto accum_col = V4f(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -133,8 +134,6 @@ __global__ void raytrace(const Mesh *mesh,
                     // find the intersection with the mesh
                     float t = MAX;
                     int idx = -1;
-
-                    // find the intersection with the mesh
                     bool hit = (*mesh).hitting(temp_ray, t, idx);
 
                     // if hit, set the color of the pixel
@@ -145,6 +144,7 @@ __global__ void raytrace(const Mesh *mesh,
                         V4f collision_normal = toV4f(collsion_triangle.interpolate_normal(collsion.toV3f()));
                         collision_normal = normalize(collision_normal);
 
+                        // judge if the material is light
                         bool if_light = collsion_triangle.mat.if_light;
 
                         // get the new ray
@@ -169,8 +169,7 @@ __global__ void raytrace(const Mesh *mesh,
                                 // set the color of the pixel
                                 temp_col = temp_col * albedo * cos_theta / russian_roulette;
                                 // set the new ray
-                                temp_ray.dir = new_ray.dir;
-                                temp_ray.orig = collsion + temp_ray.dir * MIN_surface;
+                                temp_ray = new_ray;
 
                             } else {
                                 // set the color of the pixel

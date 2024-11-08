@@ -29,6 +29,25 @@ class Triangle {
             this->normals[i] = normals[i];
         }
     }
+
+    __host__ __device__ Triangle(V3f *vertices, V3f *normals, const Material &mat) {
+        for (int i = 0; i < 3; i++) {
+            this->vertices[i] = vertices[i];
+            this->normals[i] = normals[i];
+        }
+        this->mat = mat;
+    }
+
+    __host__ __device__ Triangle(V3f v0, V3f v1, V3f v2) {
+        // add a triangle with the same normal(flat)
+        vertices[0] = v0;
+        vertices[1] = v1;
+        vertices[2] = v2;
+        normals[0] = cross(v1 - v0, v2 - v0);
+        normals[1] = normals[0];
+        normals[2] = normals[0];
+    }
+
     __host__ __device__ Triangle(V3f v0, V3f v1, V3f v2, V3f n0, V3f n1, V3f n2) {
         vertices[0] = v0;
         vertices[1] = v1;
@@ -36,6 +55,16 @@ class Triangle {
         normals[0] = n0;
         normals[1] = n1;
         normals[2] = n2;
+    }
+
+    __host__ __device__ Triangle(V3f v0, V3f v1, V3f v2, V3f n0, V3f n1, V3f n2, const Material &mat) {
+        vertices[0] = v0;
+        vertices[1] = v1;
+        vertices[2] = v2;
+        normals[0] = n0;
+        normals[1] = n1;
+        normals[2] = n2;
+        this->mat = mat;
     }
 
     // * member functions
@@ -118,22 +147,35 @@ class Mesh {
     }
 
     // * member functions
-    __device__ Triangle get_triangle(int i) const {
+    __host__ __device__ Triangle get_triangle(int i) const {
         return triangles[i];
     }
+
     __host__ __device__ int get_num_triangles() const {
         return num_triangles;
     }
 
-    __host__ __device__ void set_material(const Material &mat) {
-        for (int i = 0; i < num_triangles; i++) {
-            triangles[i].set_material(mat);
+    __host__ __device__ void set_material(const Material &mat, int tri_idx = -1) {
+        // if tri_idx == -1, set the material for all triangles
+        if (tri_idx == -1) {
+            for (int i = 0; i < num_triangles; i++) {
+                triangles[i].set_material(mat);
+            }
+            return;
         }
+        triangles[tri_idx].set_material(mat);
     }
 
     __host__ __device__ void add_triangle(const Triangle &triangle) {
         triangles[num_triangles] = triangle;
         num_triangles++;
+    }
+
+    __host__ __device__ void add_triangles(const Triangle *triangles, int num_triangles) {
+        for (int i = 0; i < num_triangles; i++) {
+            this->triangles[num_triangles + i] = triangles[i];
+        }
+        this->num_triangles += num_triangles;
     }
 
     // get hitting triangle

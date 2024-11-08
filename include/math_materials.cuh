@@ -6,7 +6,6 @@
 #include <curand_kernel.h>
 
 #include <cmath>
-#include "global.cuh"
 #include "error.hpp"
 #include <iostream>
 
@@ -14,12 +13,14 @@
 #include <thrust/extrema.h>
 #include <thrust/execution_policy.h>
 
+// * global settings
+#define BLOCK_SIZE 8
 #define MAX 1e6
 #define MAX_mesh 10000
-#define MAX_bound 20
 #define MIN_surface 1e-4
 #define LITTLE_FUZZ 7e-4
 
+// * V3f, M3f, V4f, M4f
 class V3f {
    public:
     // * member variable

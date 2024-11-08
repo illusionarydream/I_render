@@ -79,31 +79,28 @@ class Material {
                                     curandState *state) const {
         // *0: light
         if (type == 0) {
-            albedo = this->albedo;                             // the albedo is the color of the light
-            wo = Ray(collision, V4f(0.0f, 0.0f, 0.0f, 0.0f));  // the scattered Ray is the light itself
+            albedo = this->albedo;  // the albedo is the color of the light
+            // no reflection
+            wo = Ray(collision, V4f(0.0f, 0.0f, 0.0f, 0.0f));
             return false;
         }
         // *1: lambertian
         else if (type == 1) {
             albedo = this->albedo;  // the albedo is the color of the material
-            // the scattered Ray is the Ray that starts from the collision point
-            // and goes to a random point on the hemisphere whose normal is the normal
+            // diffuse reflection
             V4f diro = normal + random_in_unit_sphere_V4f(state);
-
-            wo = Ray(collision, normalize(diro));
+            wo = Ray(collision, diro);
+            wo.orig = wo(MIN_surface);
             return true;
         }
         // *2: metal
         else if (type == 2) {
             albedo = this->albedo;  // the albedo is the color of the material
-            // the scattered Ray is the Ray that starts from the collision point
-            // and goes to the reflection point of the incident Ray
+            // specular reflection
             V4f reflected = reflect(normalize(wi.dir * -1.0f), normal);
             V4f diro = reflected + random_in_unit_sphere_V4f(state) * fuzz;
-
-            wo = Ray(collision, normalize(diro));
-
-            // printf("collision: %f, %f, %f, %f\n", collision[0], collision[1], collision[2], collision[3]);
+            wo = Ray(collision, diro);
+            wo.orig = wo(MIN_surface);
             return true;
         }
         return false;
