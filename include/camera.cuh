@@ -21,9 +21,10 @@ class Camera {
     bool if_normalmap = false;
     bool if_pathtracing = false;
     bool if_more_kernel = false;
+    bool if_show_info = false;
 
-    float russian_roulette = 0.9f;
-    int samples_per_pixel = 500;
+    float russian_roulette = 0.90f;
+    int samples_per_pixel = 260;
     int samples_per_kernel = 20;
 
     // * constructors
@@ -106,7 +107,8 @@ class Camera {
                     const int width,
                     const int height,
                     const std::vector<V3f>& image) {
-        printf("Camera::storeImage\n");
+        if (if_show_info)
+            printf("Camera::storeImage\n");
         // store the image
         cv::Mat img(height, width, CV_32FC3, (void*)image.data());
         img.convertTo(img, CV_8UC3, 255.0);

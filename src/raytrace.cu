@@ -134,7 +134,7 @@ __global__ void raytrace(const Mesh *mesh,
                     // find the intersection with the mesh
                     float t = MAX;
                     int idx = -1;
-                    bool hit = (*mesh).hitting(temp_ray, t, idx);
+                    bool hit = (*mesh).hitting_BVH(temp_ray, t, idx);
 
                     // if hit, set the color of the pixel
                     if (hit) {

@@ -8,6 +8,7 @@
 #include <cmath>
 #include "error.hpp"
 #include <iostream>
+#include <algorithm>
 
 #include <thrust/device_vector.h>
 #include <thrust/extrema.h>
@@ -16,7 +17,7 @@
 // * global settings
 #define BLOCK_SIZE 8
 #define MAX 1e6
-#define MAX_mesh 10000
+#define MAX_mesh 8000
 #define MIN_surface 1e-4
 #define LITTLE_FUZZ 7e-4
 

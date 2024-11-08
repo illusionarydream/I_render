@@ -25,7 +25,8 @@ void Camera::generateRay(const int width, const int height, std::vector<Ray>& ra
     cudaMemcpy(d_Inv_Intrinsics, &Inv_Intrinsics, sizeof(M3f), cudaMemcpyHostToDevice);
     cudaMemcpy(d_Inv_Extrinsics, &Inv_Extrinsics, sizeof(M4f), cudaMemcpyHostToDevice);
 
-    printf("Camera::generateRay\n");
+    if (if_show_info)
+        printf("Camera::generateRay\n");
 
     // generate ray
     generateRayKernel<<<grid, block>>>(d_Inv_Extrinsics, d_Inv_Intrinsics, d_cam_pos, width, height, d_rays);
@@ -66,7 +67,8 @@ void Camera::render_raytrace(const int width,
     cudaMemcpy(d_meshes, &meshes, sizeof(Mesh), cudaMemcpyHostToDevice);
     cudaMemcpy(d_rays, rays.data(), rays.size() * sizeof(Ray), cudaMemcpyHostToDevice);
 
-    printf("Camera::init_raytrace\n");
+    if (if_show_info)
+        printf("Camera::init_raytrace\n");
 
     // set the block size and grid size
     dim3 block(BLOCK_SIZE, BLOCK_SIZE, 1);
@@ -91,7 +93,8 @@ void Camera::render_raytrace(const int width,
     // ? check the cuda error
     CHECK_CUDA_ERROR(cudaGetLastError());
 
-    printf("Camera::render_raytrace\n");
+    if (if_show_info)
+        printf("Camera::render_raytrace\n");
 
     // raytrace
     raytrace<<<grid, block>>>(d_meshes,

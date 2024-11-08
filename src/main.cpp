@@ -2,6 +2,7 @@
 #include <iostream>
 #include "dataload.cuh"
 #include "camera.cuh"
+#include "window.cuh"
 
 #define IMAGE_WIDTH 400
 #define IMAGE_HEIGHT 400
@@ -34,24 +35,41 @@ int main() {
     mirror.set_material(mirror_material);
     meshes.add_triangle(mirror);
 
+    // * build the BVH
+    meshes.build_BVH();
+
     // * set the camera
     Camera camera;
     camera.setIntrinsics(2.0f, 2.0f, 0.5f, 0.5f, 0.0f);
-    camera.setExtrinsics(V4f(0.0f, 0.0f, 8.0f, 1.0f), V4f(0.0f, 0.0f, 0.0f, 1.0f), V4f(0.0f, -1.0f, 0.0f, 0.0f));
-
-    // * generate rays
-    std::vector<Ray> rays(IMAGE_WIDTH * IMAGE_HEIGHT);
-    camera.generateRay(IMAGE_HEIGHT, IMAGE_WIDTH, rays);
-
-    // * render the scene
     // camera.if_normalmap = true;  // set to true to render normal map
     // camera.if_depthmap = true;  // set to true to render depth map
     camera.if_pathtracing = true;  // set to true to render path tracing
     camera.if_more_kernel = true;  // set to true to render more kernel
 
-    std::vector<V3f> image(IMAGE_HEIGHT * IMAGE_WIDTH);
-    camera.render_raytrace(IMAGE_HEIGHT, IMAGE_WIDTH, meshes, rays, image);
-    camera.storeImage("/home/illusionary/文档/计算机图形学/I_render/output/output.jpg", IMAGE_WIDTH, IMAGE_HEIGHT, image);
+    // get circle camera
+    printf("Rendering circle camera\n");
+    for (int i = 0; i < 360; i++) {
+        // * show progress bar
+        showProgressBar(float(i) / 360);
+
+        // * get the camera position
+        float theta = i * 3.1415926f / 180.0f;
+        float x = 8.0f * cos(theta);
+        float z = 8.0f * sin(theta);
+        camera.setExtrinsics(V4f(x, 0.0f, z, 1.0f), V4f(0.0f, 0.0f, 0.0f, 1.0f), V4f(0.0f, -1.0f, 0.0f, 0.0f));
+
+        // * generate rays
+        std::vector<Ray> rays(IMAGE_WIDTH * IMAGE_HEIGHT);
+        camera.generateRay(IMAGE_HEIGHT, IMAGE_WIDTH, rays);
+
+        // * render the scene
+        std::vector<V3f> image(IMAGE_HEIGHT * IMAGE_WIDTH);
+        camera.render_raytrace(IMAGE_HEIGHT, IMAGE_WIDTH, meshes, rays, image);
+        camera.storeImage("/home/illusionary/文档/计算机图形学/I_render/output/circle/circle_" + std::to_string(i) + ".png", IMAGE_WIDTH, IMAGE_HEIGHT, image);
+
+        // * clear the cuda memory
+        cudaDeviceReset();
+    }
 
     return 0;
 }

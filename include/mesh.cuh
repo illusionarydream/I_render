@@ -3,6 +3,7 @@
 
 #include "math_materials.cuh"
 #include "material.cuh"
+#include "bbox.cuh"
 
 class Triangle {
    public:
@@ -76,7 +77,19 @@ class Triangle {
         return normals[i];
     }
 
-    __host__ __device__ void set_material(const Material &mat) {
+    __host__ __device__ Bbox get_bbox() const {
+        Bbox bbox;
+        bbox.expand(vertices[0]);
+        bbox.expand(vertices[1]);
+        bbox.expand(vertices[2]);
+
+        bbox.max = bbox.max + V3f(0.001f, 0.001f, 0.001f);
+        bbox.min = bbox.min - V3f(0.001f, 0.001f, 0.001f);
+        return bbox;
+    }
+
+    __host__ __device__ void
+    set_material(const Material &mat) {
         this->mat = mat;
     }
 
@@ -129,6 +142,16 @@ class Triangle {
 
         // if the intersection is outside the triangle
         return -1;
+    }
+
+    // * override the operator
+    __host__ __device__ Triangle &operator=(const Triangle &triangle) {
+        for (int i = 0; i < 3; i++) {
+            vertices[i] = triangle.vertices[i];
+            normals[i] = triangle.normals[i];
+        }
+        mat = triangle.mat;
+        return *this;
     }
 };
 
@@ -197,6 +220,116 @@ class Mesh {
             }
         }
         return t < MAX - 10;
+    }
+
+    // * Adding BVH acceleration structure
+   public:
+    // * member variable
+    Bbox box_tree[MAX_mesh * 2 - 1];                 // the bounding box of the tree
+    std::pair<int, int> idx_tree[MAX_mesh * 2 - 1];  // the left and right child of the tree
+    int tridx_left[MAX_mesh * 2 - 1];                // the start index of the triangles in the left child
+    int tridx_right[MAX_mesh * 2 - 1];               // the start index of the triangles in the right child
+
+    // * constructor
+    __host__ void build_BVH() {
+        // build Bbox for each triangle
+        Bbox *bbox = new Bbox[num_triangles];  // only for temporary use
+        for (int i = 0; i < num_triangles; i++)
+            bbox[i] = triangles[i].get_bbox();
+
+        // recursive build the BVH
+        build_bvh_recursive(0, num_triangles, 0, bbox);
+    }
+
+    // * member functions
+    __host__ __device__ void build_bvh_recursive(int l, int r, int idx, Bbox *bbox) {
+        // build the Bbox for the current node
+        Bbox box;
+        for (int i = l; i < r; i++)
+            box.expand(bbox[i]);
+        box_tree[idx] = box;
+
+        // if the number of triangles is less than 4, set the leaf node
+        // l ~ r-1
+        if (r - l <= 4) {
+            idx_tree[idx] = std::make_pair(-1, -1);
+            tridx_left[idx] = l;
+            tridx_right[idx] = r;
+            return;
+        }
+
+        // get the maximum extent of the box
+        int max_extent = box.maxExtent();
+
+        // sort the triangles
+        std::sort(bbox + l, bbox + r, [max_extent](const Bbox &a, const Bbox &b) {
+            return a.centroid()[max_extent] < b.centroid()[max_extent];
+        });
+        std::sort(triangles + l, triangles + r, [max_extent](const Triangle &a, const Triangle &b) {
+            return a.get_bbox().centroid()[max_extent] < b.get_bbox().centroid()[max_extent];
+        });
+
+        // build the left and right child
+        int mid = (l + r) / 2;
+        build_bvh_recursive(l, mid, 2 * idx + 1, bbox);
+        build_bvh_recursive(mid, r, 2 * idx + 2, bbox);
+
+        // set the index of the left and right child
+        idx_tree[idx] = std::make_pair(2 * idx + 1, 2 * idx + 2);
+        tridx_left[idx] = -1;
+        tridx_right[idx] = -1;
+    }
+
+// get the hitting triangle
+#define MAX_ITR 50
+    __device__ bool hitting_BVH(const Ray &ray, float &t, int &id) const {
+        t = MAX;
+        id = -1;
+        bool if_hit = false;
+
+        // the stack for the BVH
+        int stack[MAX_ITR];
+        int stack_top = 0;
+        stack[stack_top++] = 0;
+
+        // find the intersection with the mesh
+        while (stack_top) {
+            int idx = stack[--stack_top];
+            float t_near, t_far;
+            if (!box_tree[idx].intersect(ray, t_near, t_far))
+                continue;
+
+            // ! error handling
+            if (MAX_ITR <= stack_top) {
+                printf("Error: stack overflow\n");
+                return false;
+            }
+
+            // if the bounding box is too far
+            if (t_near > t)
+                continue;
+
+            // if the node is leaf node
+            if (idx_tree[idx].first == -1) {
+                for (int i = tridx_left[idx]; i < tridx_right[idx]; i++) {
+                    const Triangle &triangle = triangles[i];
+
+                    // find the intersection with the triangle
+                    float t_tri = triangle.intersect(ray);
+
+                    // update the intersection
+                    if (t_tri > 0 && t_tri < t) {
+                        t = t_tri;
+                        id = i;
+                        if_hit = true;
+                    }
+                }
+            } else {
+                stack[stack_top++] = idx_tree[idx].first;
+                stack[stack_top++] = idx_tree[idx].second;
+            }
+        }
+        return if_hit;
     }
 };
 
