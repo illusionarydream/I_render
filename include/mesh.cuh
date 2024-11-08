@@ -75,37 +75,31 @@ class Triangle {
         auto ray_dir = ray.dir.toV3f();
 
         // the back face is not visible
-        if (dot(ray_dir, normals[0]) > 0) {
+        auto oriented_normals = (normals[0] + normals[1] + normals[2]) / 3.0f;
+        if (dot(ray_dir, oriented_normals) > 0) {
             return -1;
         }
 
-        // get t
+        // * Moller-Trumbore algorithm
         V3f e1 = vertices[1] - vertices[0];
         V3f e2 = vertices[2] - vertices[0];
-        V3f n = cross(e1, e2);
+        V3f s = ray_orig - vertices[0];
+        V3f s1 = cross(ray_dir, e2);
+        V3f s2 = cross(s, e1);
 
-        float t = dot(n, vertices[0] - ray_orig) / dot(n, ray_dir);
+        float inv_d = 1.0f / dot(s1, e1);
 
-        if (t < 0 || t > MAX_bound) {
-            return -1;
+        float t = dot(s2, e2) * inv_d;
+        float u = dot(s1, s) * inv_d;
+        float v = dot(s2, ray_dir) * inv_d;
+
+        // if the intersection is inside the triangle
+        if (t > 0 && u > 0 && v > 0 && u + v < 1) {
+            return t;
         }
 
-        // judge if the intersection is inside the triangle
-        V3f p = ray(t).toV3f();
-
-        auto pv1 = vertices[0] - p;
-        auto pv2 = vertices[1] - p;
-        auto pv3 = vertices[2] - p;
-
-        auto c12 = cross(pv1, pv2);
-        auto c23 = cross(pv2, pv3);
-        auto c31 = cross(pv3, pv1);
-
-        if (dot(c12, c23) < 0 || dot(c12, c31) < 0) {
-            return -1;
-        }
-
-        return t;
+        // if the intersection is outside the triangle
+        return -1;
     }
 };
 

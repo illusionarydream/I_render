@@ -18,7 +18,7 @@
 #define MAX_mesh 10000
 #define MAX_bound 20
 #define MIN_surface 1e-4
-#define LITTLE_FUZZ 5e-4
+#define LITTLE_FUZZ 7e-4
 
 class V3f {
    public:
@@ -272,6 +272,14 @@ __forceinline__ __host__ __device__ float dot(const V4f &a, const V4f &b) {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
 }
 
+// determinant
+// in CG, 3x3 determinant is enough
+__forceinline__ __host__ __device__ float det(const M3f &m) {
+    return m.data[0][0] * m.data[1][1] * m.data[2][2] + m.data[0][1] * m.data[1][2] * m.data[2][0] +
+           m.data[0][2] * m.data[1][0] * m.data[2][1] - m.data[0][2] * m.data[1][1] * m.data[2][0] -
+           m.data[0][1] * m.data[1][0] * m.data[2][2] - m.data[0][0] * m.data[1][2] * m.data[2][1];
+}
+
 // length
 __forceinline__ __host__ __device__ float length(const V3f &v) {
     return sqrtf(dot(v, v));
@@ -356,7 +364,7 @@ class Ray {
 
     // * constructor
     __host__ __device__ Ray() {}
-    __host__ __device__ Ray(const V4f &o, const V4f &d) : orig(o), dir(d) {}
+    __host__ __device__ Ray(const V4f &o, const V4f &d) : orig(o), dir(normalize(d)) {}
 
     // * operator overloading
     __host__ __device__ V4f operator()(float t) const { return orig + dir * t; }

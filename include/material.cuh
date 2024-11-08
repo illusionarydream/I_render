@@ -62,6 +62,7 @@ class Material {
     // the v and output are both outgoing
     __host__ __device__ V4f reflect(const V4f &v, const V4f &n) const {
         V4f reflected = n * 2.0f - v;
+
         return reflected;
     }
 
@@ -101,6 +102,8 @@ class Material {
             V4f diro = reflected + random_in_unit_sphere_V4f(state) * fuzz;
 
             wo = Ray(collision, normalize(diro));
+
+            // printf("collision: %f, %f, %f, %f\n", collision[0], collision[1], collision[2], collision[3]);
             return true;
         }
         return false;

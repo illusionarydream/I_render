@@ -170,7 +170,7 @@ __global__ void raytrace(const Mesh *mesh,
                                 temp_col = temp_col * albedo * cos_theta / russian_roulette;
                                 // set the new ray
                                 temp_ray.dir = new_ray.dir;
-                                temp_ray.orig = collsion + collision_normal * MIN_surface;
+                                temp_ray.orig = collsion + temp_ray.dir * MIN_surface;
 
                             } else {
                                 // set the color of the pixel

@@ -18,7 +18,7 @@ int main() {
     meshes.set_material(material);  // this step must be before add_triangles, because the added light will not have the material
 
     // * set the light
-    Material light_material(0, V4f(5.0f, 5.0f, 0.0f, 1.0f));
+    Material light_material(0, V4f(8.0f, 3.0f, 0.0f, 1.0f));
     Triangle light(V3f(0.0f, 2.0f, 2.0f), V3f(0.0f, 2.0f, 0.0f), V3f(-2.0f, 2.0f, 0.0f),
                    V3f(0.0f, -1.0f, 0.0f), V3f(0.0f, -1.0f, 0.0f), V3f(0.0f, -1.0f, 0.0f));
     light.set_material(light_material);
@@ -26,8 +26,11 @@ int main() {
 
     // * set the mirror triangle
     Material mirror_material(2, V4f(1.0f, 1.0f, 1.0f, 1.0f));
-    Triangle mirror(V3f(100.0f, -1.0f, 100.0f), V3f(100.0f, -1.0f, -100.0f), V3f(-100.0f, -1.0f, 0.0f),
-                    V3f(0.0f, 1.0f, 0.0f), V3f(0.0f, 1.0f, 0.0f), V3f(0.0f, 1.0f, 0.0f));
+    V3f p0(10.0f, -5.0f, 10.0f);
+    V3f p1(-10.0f, -5.0f, 10.0f);
+    V3f p2(0.0f, 12.0f, -30.0f);
+    V3f mirror_normal = normalize(cross(p1 - p0, p2 - p0)) * -1.0f;
+    Triangle mirror(p0, p1, p2, mirror_normal, mirror_normal, mirror_normal);
     mirror.set_material(mirror_material);
     meshes.add_triangle(mirror);
 
