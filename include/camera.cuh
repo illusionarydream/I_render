@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 #include <opencv2/opencv.hpp>
 #include "raytrace.cuh"
+#include "rasterize.cuh"
 
 class Camera {
    public:
@@ -128,6 +129,11 @@ class Camera {
                          const Mesh& meshes,
                          const std::vector<Ray>& rays,
                          std::vector<V3f>& image);
+
+    void render_rasterization(const int width,
+                              const int height,
+                              const Mesh& meshes,
+                              std::vector<V3f>& image);
 };
 
 #endif  // CAMERA_CUH

@@ -123,3 +123,119 @@ void Camera::render_raytrace(const int width,
 
     return;
 }
+
+// render by rasterization
+void Camera::render_rasterization(const int width,
+                                  const int height,
+                                  const Mesh& meshes,
+                                  std::vector<V3f>& image) {
+    // * render the scene by rasterization
+    // width: width of the image
+    // height: height of the image
+    // meshes: the meshes in the scene
+    // image: the image to store the color
+    // ! use cuda functions
+    // redefine the near, far, left, right, top, bottom
+
+    // * data transfer
+    int triangle_num = meshes.get_num_triangles();
+    int light_num = meshes.get_num_lights();
+    int total_num = triangle_num + light_num;
+    Triangle* d_triangles;
+    Light* d_lights;
+
+    M4f* d_Extrinsics;
+    M4f* d_Inv_Extrinsics;
+    M3f* d_Intrinsics;
+
+    // intermediate variable
+    ZBuffer_element* d_buffer_elements;
+
+    // result image
+    V3f* d_image;
+
+    cudaMalloc(&d_triangles, triangle_num * sizeof(Triangle));
+    cudaMalloc(&d_lights, light_num * sizeof(Light));
+    cudaMalloc(&d_Extrinsics, sizeof(M4f));
+    cudaMalloc(&d_Inv_Extrinsics, sizeof(M4f));
+    cudaMalloc(&d_Intrinsics, sizeof(M3f));
+    cudaMalloc(&d_image, width * height * sizeof(V3f));
+
+    cudaMalloc(&d_buffer_elements, width * height * sizeof(ZBuffer_element));
+
+    cudaMemcpy(d_triangles, meshes.triangles, triangle_num * sizeof(Triangle), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_lights, meshes.light, light_num * sizeof(Light), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_Extrinsics, &Extrinsics, sizeof(M4f), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_Inv_Extrinsics, &Inv_Extrinsics, sizeof(M4f), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_Intrinsics, &Intrinsics, sizeof(M3f), cudaMemcpyHostToDevice);
+
+    // * initialize the depth buffer
+    dim3 block(BLOCK_SIZE, BLOCK_SIZE, 1);
+    dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y, 1);
+
+    if (if_show_info)
+        printf("Camera::init_rasterization\n");
+
+    initDepthBuffer<<<grid, block>>>(d_buffer_elements, width, height);
+
+    // synchronize the device
+    cudaDeviceSynchronize();
+
+    // * transfrom the triangles and the lights to the view space
+    // set the block size and grid size
+    block = dim3(BLOCK_SIZE, BLOCK_SIZE, 1);
+    int sample_square = sqrt(total_num) + 1;
+    grid = dim3((sample_square + block.x - 1) / block.x, (sample_square + block.y - 1) / block.y, 1);
+
+    if (if_show_info)
+        printf("Camera::transformTrianglesAndLights\n");
+
+    // transform the triangles and lights to the view space
+    transformTrianglesAndLights<<<grid, block>>>(d_triangles,
+                                                 d_lights,
+                                                 width,
+                                                 height,
+                                                 triangle_num,
+                                                 light_num,
+                                                 sample_square,
+                                                 d_Extrinsics,
+                                                 d_Inv_Extrinsics,
+                                                 d_Intrinsics,
+                                                 // immediate variables
+                                                 d_buffer_elements);
+
+    // ? check the cuda error
+    CHECK_CUDA_ERROR(cudaGetLastError());
+
+    // synchronize the device
+    cudaDeviceSynchronize();
+
+    // * do shading
+    if (if_show_info)
+        printf("Camera::shading\n");
+
+    // set the block size and grid size
+    block = dim3(BLOCK_SIZE, BLOCK_SIZE, 1);
+    grid = dim3((width + block.x - 1) / block.x, (height + block.y - 1) / block.y, 1);
+
+    // shading
+    shading<<<grid, block>>>(d_triangles,
+                             d_lights,
+                             width,
+                             height,
+                             triangle_num,
+                             light_num,
+                             d_buffer_elements,
+                             d_image);
+
+    // ? check the cuda error
+    CHECK_CUDA_ERROR(cudaGetLastError());
+
+    // synchronize the device
+    cudaDeviceSynchronize();
+
+    // * copy the data back
+    cudaMemcpy(image.data(), d_image, width * height * sizeof(V3f), cudaMemcpyDeviceToHost);
+
+    return;
+}

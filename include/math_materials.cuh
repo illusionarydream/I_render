@@ -18,6 +18,7 @@
 #define BLOCK_SIZE 8
 #define MAX 1e6
 #define MAX_mesh 8000
+#define MAX_light 10
 #define MIN_surface 1e-4
 #define LITTLE_FUZZ 7e-4
 
@@ -375,4 +376,31 @@ class Ray {
 __forceinline__ __host__ __device__ float sigmoid(float x) {
     return 1.0f / (1.0f + expf(-x));
 }
+
+// barrycentric
+__forceinline__ __device__ void barycentric(const float &x, const float &y,
+                                            const float &x1, const float &y1,
+                                            const float &x2, const float &y2,
+                                            const float &x3, const float &y3,
+                                            float &u, float &v, float &w) {
+    float ex1 = x1 - x, ex2 = x2 - x, ex3 = x3 - x;
+    float ey1 = y1 - y, ey2 = y2 - y, ey3 = y3 - y;
+
+    float w1 = ex1 * ey2 - ex2 * ey1;
+    float w2 = ex2 * ey3 - ex3 * ey2;
+    float w3 = ex3 * ey1 - ex1 * ey3;
+
+    float area = w1 * w2 + w2 * w3 + w3 * w1;
+
+    float w1_n = w2 * w3 / area;
+    float w2_n = w3 * w1 / area;
+    float w3_n = w1 * w2 / area;
+
+    u = w1_n;
+    v = w2_n;
+    w = w3_n;
+
+    return;
+}
+
 #endif  // MATERIALS_CUH

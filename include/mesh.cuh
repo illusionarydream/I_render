@@ -4,12 +4,17 @@
 #include "math_materials.cuh"
 #include "material.cuh"
 #include "bbox.cuh"
+#include "light.cuh"
 
 class Triangle {
    public:
     // * member variable
     V3f vertices[3];
     V3f normals[3];
+
+    // editted by gpu
+    V3f vertices_view[3];
+    V3f normals_view[3];
 
     Material mat;
 
@@ -41,6 +46,7 @@ class Triangle {
 
     __host__ __device__ Triangle(V3f v0, V3f v1, V3f v2) {
         // add a triangle with the same normal(flat)
+        // right-hand coordinate system
         vertices[0] = v0;
         vertices[1] = v1;
         vertices[2] = v2;
@@ -161,6 +167,9 @@ class Mesh {
     Triangle triangles[MAX_mesh];
     int num_triangles;
 
+    Light light[MAX_light];
+    int num_lights;
+
     // * constructor
     __host__ __device__ Mesh(const Triangle *triangles, int num_triangles) {
         this->num_triangles = num_triangles;
@@ -176,6 +185,14 @@ class Mesh {
 
     __host__ __device__ int get_num_triangles() const {
         return num_triangles;
+    }
+
+    __host__ __device__ Light get_light(int i) const {
+        return light[i];
+    }
+
+    __host__ __device__ int get_num_lights() const {
+        return num_lights;
     }
 
     __host__ __device__ void set_material(const Material &mat, int tri_idx = -1) {
@@ -199,6 +216,18 @@ class Mesh {
             this->triangles[num_triangles + i] = triangles[i];
         }
         this->num_triangles += num_triangles;
+    }
+
+    __host__ __device__ void add_light(const Light &light) {
+        this->light[num_lights] = light;
+        num_lights++;
+    }
+
+    __host__ __device__ void add_lights(const Light *lights, int num_lights) {
+        for (int i = 0; i < num_lights; i++) {
+            this->light[num_lights + i] = lights[i];
+        }
+        this->num_lights += num_lights;
     }
 
     // get hitting triangle
@@ -242,7 +271,7 @@ class Mesh {
     }
 
     // * member functions
-    __host__ __device__ void build_bvh_recursive(int l, int r, int idx, Bbox *bbox) {
+    __host__ void build_bvh_recursive(int l, int r, int idx, Bbox *bbox) {
         // build the Bbox for the current node
         Bbox box;
         for (int i = l; i < r; i++)
@@ -283,7 +312,6 @@ class Mesh {
 // get the hitting triangle
 #define MAX_ITR 50
     __device__ bool hitting_BVH(const Ray &ray, float &t, int &id) const {
-        t = MAX;
         id = -1;
         bool if_hit = false;
 
