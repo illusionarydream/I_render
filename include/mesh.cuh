@@ -171,6 +171,11 @@ class Mesh {
     int num_lights;
 
     // * constructor
+    __host__ __device__ Mesh() {
+        num_triangles = 0;
+        num_lights = 0;
+    }
+
     __host__ __device__ Mesh(const Triangle *triangles, int num_triangles) {
         this->num_triangles = num_triangles;
         for (int i = 0; i < num_triangles; i++) {
@@ -213,7 +218,7 @@ class Mesh {
 
     __host__ __device__ void add_triangles(const Triangle *triangles, int num_triangles) {
         for (int i = 0; i < num_triangles; i++) {
-            this->triangles[num_triangles + i] = triangles[i];
+            this->triangles[this->num_triangles + i] = triangles[i];
         }
         this->num_triangles += num_triangles;
     }

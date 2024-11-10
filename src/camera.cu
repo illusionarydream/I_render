@@ -238,5 +238,14 @@ void Camera::render_rasterization(const int width,
     // * copy the data back
     cudaMemcpy(image.data(), d_image, width * height * sizeof(V3f), cudaMemcpyDeviceToHost);
 
+    // * free the memory
+    cudaFree(d_triangles);
+    cudaFree(d_lights);
+    cudaFree(d_image);
+    cudaFree(d_Extrinsics);
+    cudaFree(d_Inv_Extrinsics);
+    cudaFree(d_Intrinsics);
+    cudaFree(d_buffer_elements);
+
     return;
 }

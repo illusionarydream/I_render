@@ -9,9 +9,16 @@ enable_language(CUDA)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CUDA_ARCHITECTURES 86)
 
+find_package(OpenGL REQUIRED)
+find_package(GLEW REQUIRED)
+find_package(glfw3 REQUIRED)
+find_package(glm REQUIRED)
+
 # All src_code
 # Add the source files
 file(GLOB SOURCES "src/*.cpp" "src/*.cu")
+
+
 
 # All headers
 find_package(OpenCV REQUIRED)
@@ -31,4 +38,4 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:-arch=compute_86>)
     
 
-target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS})
+target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} ${OPENGL_LIBRARIES} GLEW::GLEW glfw glm::glm)
