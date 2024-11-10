@@ -34,6 +34,12 @@ class Camera {
     float ks = 0.6;
     float kn = 32.0;
 
+    // * pre-gpu parameters
+    Triangle* d_triangles;
+    Light* d_lights;
+    ZBuffer_element* d_buffer_elements;
+    V3f* d_image;
+
     int super_sampling_ratio = 4;  // cannot larger than 4
 
     // * constructors
@@ -53,6 +59,9 @@ class Camera {
                              0.0f, 1.0f, 0.0f, 0.0f,
                              0.0f, 0.0f, 1.0f, 0.0f,
                              0.0f, 0.0f, 0.0f, 1.0f);
+        d_triangles = nullptr;
+        d_lights = nullptr;
+        d_buffer_elements = nullptr;
     }
     Camera(const M3f& intrinsics, const M4f& extrinsics) : Intrinsics(intrinsics), Extrinsics(extrinsics) {}
     ~Camera() {}
@@ -110,6 +119,10 @@ class Camera {
 
         this->cam_pos = cam_pos;
     }
+
+    void setGPUParameters(const Mesh& meshes,
+                          const int width,
+                          const int height);
 
     // store the image
     void storeImage(const std::string& filename,

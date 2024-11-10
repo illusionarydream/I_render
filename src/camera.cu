@@ -124,6 +124,22 @@ void Camera::render_raytrace(const int width,
     return;
 }
 
+void Camera::setGPUParameters(const Mesh& meshes,
+                              const int width,
+                              const int height) {
+    // * set the parameters for GPU
+    // meshes: the meshes in the scene
+    // lights: the lights in the scene
+    // ! use cuda functions
+    cudaMalloc(&d_triangles, meshes.get_num_triangles() * sizeof(Triangle));
+    cudaMalloc(&d_lights, meshes.get_num_lights() * sizeof(Light));
+    cudaMalloc(&d_buffer_elements, width * height * super_sampling_ratio * super_sampling_ratio * sizeof(ZBuffer_element));
+    cudaMalloc(&d_image, width * height * sizeof(V3f));
+
+    cudaMemcpy(d_triangles, meshes.triangles, meshes.get_num_triangles() * sizeof(Triangle), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_lights, meshes.light, meshes.get_num_lights() * sizeof(Light), cudaMemcpyHostToDevice);
+}
+
 // render by rasterization
 void Camera::render_rasterization(const int width,
                                   const int height,
@@ -141,29 +157,16 @@ void Camera::render_rasterization(const int width,
     int triangle_num = meshes.get_num_triangles();
     int light_num = meshes.get_num_lights();
     int total_num = triangle_num + light_num;
-    Triangle* d_triangles;
-    Light* d_lights;
     // transformation matrix
     M4f* d_Extrinsics;
     M4f* d_Inv_Extrinsics;
     M3f* d_Intrinsics;
-    // intermediate variable
-    ZBuffer_element* d_buffer_elements;
-    // result image
-    V3f* d_image;
 
-    cudaMalloc(&d_triangles, triangle_num * sizeof(Triangle));
-    cudaMalloc(&d_lights, light_num * sizeof(Light));
     // transformation matrix
     cudaMalloc(&d_Extrinsics, sizeof(M4f));
     cudaMalloc(&d_Inv_Extrinsics, sizeof(M4f));
     cudaMalloc(&d_Intrinsics, sizeof(M3f));
-    cudaMalloc(&d_image, width * height * sizeof(V3f));
-    // intermediate variable
-    cudaMalloc(&d_buffer_elements, super_sampling_ratio * super_sampling_ratio * width * height * sizeof(ZBuffer_element));
     // copy the data to the device
-    cudaMemcpy(d_triangles, meshes.triangles, triangle_num * sizeof(Triangle), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_lights, meshes.light, light_num * sizeof(Light), cudaMemcpyHostToDevice);
     cudaMemcpy(d_Extrinsics, &Extrinsics, sizeof(M4f), cudaMemcpyHostToDevice);
     cudaMemcpy(d_Inv_Extrinsics, &Inv_Extrinsics, sizeof(M4f), cudaMemcpyHostToDevice);
     cudaMemcpy(d_Intrinsics, &Intrinsics, sizeof(M3f), cudaMemcpyHostToDevice);
@@ -175,9 +178,11 @@ void Camera::render_rasterization(const int width,
     if (if_show_info)
         printf("Camera::init_rasterization\n");
 
-    initDepthBuffer<<<grid, block>>>(d_buffer_elements,
-                                     width * super_sampling_ratio,
-                                     height * super_sampling_ratio);
+    initDepthBufferandImage<<<grid, block>>>(d_buffer_elements,
+                                             d_image,
+                                             width * super_sampling_ratio,
+                                             height * super_sampling_ratio,
+                                             super_sampling_ratio);
 
     // synchronize the device
     cudaDeviceSynchronize();
@@ -239,13 +244,9 @@ void Camera::render_rasterization(const int width,
     cudaMemcpy(image.data(), d_image, width * height * sizeof(V3f), cudaMemcpyDeviceToHost);
 
     // * free the memory
-    cudaFree(d_triangles);
-    cudaFree(d_lights);
-    cudaFree(d_image);
     cudaFree(d_Extrinsics);
     cudaFree(d_Inv_Extrinsics);
     cudaFree(d_Intrinsics);
-    cudaFree(d_buffer_elements);
 
     return;
 }

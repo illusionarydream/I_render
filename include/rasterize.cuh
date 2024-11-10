@@ -15,9 +15,11 @@ struct ZBuffer_element {
 
 __device__ float atomicMinFloat(float *address, float value);
 
-__global__ void initDepthBuffer(ZBuffer_element *depth_buffer,
-                                int width,
-                                int height);
+__global__ void initDepthBufferandImage(ZBuffer_element *depth_buffer,
+                                        V3f *image,
+                                        int width,
+                                        int height,
+                                        int super_sampling_ratio);
 
 __global__ void transformTrianglesAndLights(
     Triangle *triangles,

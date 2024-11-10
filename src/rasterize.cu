@@ -36,15 +36,28 @@ __device__ float atomicMinFloat(float *address, float value) {
     return __int_as_float(old);
 }
 
-__global__ void initDepthBuffer(ZBuffer_element *depth_buffer,
-                                int width,
-                                int height) {
+__global__ void initDepthBufferandImage(ZBuffer_element *depth_buffer,
+                                        V3f *image,
+                                        int width,
+                                        int height,
+                                        int super_sampling_ratio) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (x < width && y < height) {
         int idx = y * width + x;
         depth_buffer[idx].depth = MAX;
+        depth_buffer[idx].normal = make_float3(0.0f, 0.0f, 0.0f);
+        depth_buffer[idx].position = make_float3(0.0f, 0.0f, 0.0f);
+        depth_buffer[idx].lock = 0;
+
+        if (x % super_sampling_ratio == 0 && y % super_sampling_ratio == 0) {
+            int orig_x = x / super_sampling_ratio;
+            int orig_y = y / super_sampling_ratio;
+            int orig_idx = orig_y * width / super_sampling_ratio + orig_x;
+
+            image[orig_idx] = V3f(0.0f, 0.0f, 0.0f);
+        }
     }
 }
 

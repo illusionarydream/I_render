@@ -122,6 +122,9 @@ class Window {
         glfwGetFramebufferSize(window, &width, &height);
         std::vector<V3f> image(height * width);
 
+        // prepare the camera parameters
+        camera.setGPUParameters(meshes, width, height);
+
         while (!glfwWindowShouldClose(window)) {
             camera.render_rasterization(height, width, meshes, image);
 
