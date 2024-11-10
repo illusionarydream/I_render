@@ -1,27 +1,45 @@
-## Illusionary Render
-### Introduction
-Illusionary Render is a render engine constructed by illusionary. In this work, I meant to improve the speed of rendering applying cuda programming. I divide the whole assignment into two parts:
-- Cuda rasterization.
-- Cuda raytracer.
+# Illusionary Render
 
-I will introduce seperately these two parts in the following text.
+<p align="center">
+  <img src="README_image/image.png" alt="meshes of stanford bunny" />
+</p>
 
-### Cuda rasterization
-#### Brief Intro
+
+## Introduction
+`I_render` is a rendering engine developed by Illusionary. In this project, my goal is to improve the rendering speed by applying CUDA programming. The entire task is divided into two parts:
+- CUDA rasterization
+  The CUDA rasterization part is primarily responsible for converting 3D scenes into 2D images. By leveraging the parallel computing power of the GPU, we can significantly speed up the rasterization process, resulting in faster rendering times.
+
+- CUDA ray tracing
+  The CUDA ray tracing part is used to simulate the propagation and reflection of light within the scene. Through CUDA programming, we can efficiently compute the interactions between light and objects, producing high-quality images.
+
+The combination of these two parts allows `I_render` to achieve faster rendering speeds while maintaining high image quality.
+
+## Cuda rasterization
+### Brief Intro
 In my opinion, each rendering engine has several important parts. Even though different renderers have distinct approaches to optimization and implementation, they all consider the following key issues:
 - The geometric representation of the model
 - Transformation from world coordinates to the camera plane
 - Lighting and shading of the model
   
-The keywords are: **geometry, transformation, shading**. As for I_render, I addressed these three issues separately and combined them with CUDA parallelization, achieving good results.
+The keywords are: **geometry, transformation, shading**. As for `I_render`, I addressed these three issues separately and combined them with CUDA parallelization, achieving good results.
 
-#### Implementation: geometric representation
-In I_render, all objects is presented by triangle meshes. Each triangle has three vertices. And each vertices store two attributes: normal and position. Because this work focus on speed, I only apply the basic attributes. To extend the function of I_render, it's easy to add some uv coordinates, albedo and so on to the vertices.
+### Implementation: geometric representation
+In `I_render`, all objects are represented by triangle meshes. Each triangle consists of three vertices, and each vertex stores two attributes: normal and position. This work focuses on speed, so only the essential attributes are applied. However, extending the functionality of I_render is straightforward. Additional attributes such as UV coordinates, albedo, and others can be easily added to the vertices if needed. The following image shows the meshes of the famous stanford bunny.
+
+```
+struct Vertice{
+    V3f position; // V3f is Vector-3D-float
+    V3f normal;
+    // other attributes.
+}
+```
+
 <p align="center">
   <img src="README_image/The-Stanford-Bunny-shown-on-the-left-is-reconstructed-shown-on-the-right-397-points.png" alt="meshes of stanford bunny" />
 </p>
 
-#### Implementation: transformation
+### Implementation: transformation
 As for transformation, I borrowed a method from computer vision that is more fundamental and straightforward compared to the MVP (Model-View-Projection) transformation. Each camera has its own **intrinsic matrix**, **extrinsic matrix**, and **projection matrix**:
 
 - **Intrinsic Matrix**:
@@ -83,8 +101,8 @@ As for transformation, I borrowed a method from computer vision that is more fun
 
     This combination of intrinsic, extrinsic, and projection matrices defines the complete transformation pipeline from world space to screen space in computer vision and 3D rendering.
 
-#### Implementation: shading
-In `I_render`, I apply the Blinn-Phong shading method to the shader. The Blinn-Phong model mainly considers three components of illumination: ambient illumination, specular illumination, and diffuse illumination.
+### Implementation: shading
+In ``I_render``, I apply the Blinn-Phong shading method to the shader. The Blinn-Phong model mainly considers three components of illumination: ambient illumination, specular illumination, and diffuse illumination.
 
 - **Ambient Illumination**:
 Ambient illumination represents the constant light that affects all objects in the scene equally, regardless of their position or orientation. It simulates the indirect light that is scattered throughout the environment. This component ensures that objects are never completely dark, even when they are not directly illuminated.
