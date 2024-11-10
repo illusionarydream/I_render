@@ -32,13 +32,21 @@ __global__ void transformTrianglesAndLights(
     M3f *Intrinsics,
     ZBuffer_element *depth_buffer);
 
-__global__ void shading(const Triangle *d_triangles,
-                        const Light *d_lights,
+__global__ void shading(const Triangle *triangles,
+                        const Light *lights,
                         int width,
                         int height,
                         int num_triangles,
                         int num_lights,
-                        const ZBuffer_element *d_buffer_elements,
-                        V3f *image);
+                        const ZBuffer_element *buffer_elements,
+                        V3f *image,
+                        // other parameters
+                        float ka,
+                        float kd,
+                        float ks,
+                        float kn,
+                        bool if_depthmap,
+                        bool if_normalmap,
+                        int super_sampling_ratio);
 
 #endif  // RASTERIZE_CUH

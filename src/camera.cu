@@ -143,26 +143,25 @@ void Camera::render_rasterization(const int width,
     int total_num = triangle_num + light_num;
     Triangle* d_triangles;
     Light* d_lights;
-
+    // transformation matrix
     M4f* d_Extrinsics;
     M4f* d_Inv_Extrinsics;
     M3f* d_Intrinsics;
-
     // intermediate variable
     ZBuffer_element* d_buffer_elements;
-
     // result image
     V3f* d_image;
 
     cudaMalloc(&d_triangles, triangle_num * sizeof(Triangle));
     cudaMalloc(&d_lights, light_num * sizeof(Light));
+    // transformation matrix
     cudaMalloc(&d_Extrinsics, sizeof(M4f));
     cudaMalloc(&d_Inv_Extrinsics, sizeof(M4f));
     cudaMalloc(&d_Intrinsics, sizeof(M3f));
     cudaMalloc(&d_image, width * height * sizeof(V3f));
-
-    cudaMalloc(&d_buffer_elements, width * height * sizeof(ZBuffer_element));
-
+    // intermediate variable
+    cudaMalloc(&d_buffer_elements, super_sampling_ratio * super_sampling_ratio * width * height * sizeof(ZBuffer_element));
+    // copy the data to the device
     cudaMemcpy(d_triangles, meshes.triangles, triangle_num * sizeof(Triangle), cudaMemcpyHostToDevice);
     cudaMemcpy(d_lights, meshes.light, light_num * sizeof(Light), cudaMemcpyHostToDevice);
     cudaMemcpy(d_Extrinsics, &Extrinsics, sizeof(M4f), cudaMemcpyHostToDevice);
@@ -171,12 +170,14 @@ void Camera::render_rasterization(const int width,
 
     // * initialize the depth buffer
     dim3 block(BLOCK_SIZE, BLOCK_SIZE, 1);
-    dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y, 1);
+    dim3 grid((width * super_sampling_ratio + block.x - 1) / block.x, (height * super_sampling_ratio + block.y - 1) / block.y, 1);
 
     if (if_show_info)
         printf("Camera::init_rasterization\n");
 
-    initDepthBuffer<<<grid, block>>>(d_buffer_elements, width, height);
+    initDepthBuffer<<<grid, block>>>(d_buffer_elements,
+                                     width * super_sampling_ratio,
+                                     height * super_sampling_ratio);
 
     // synchronize the device
     cudaDeviceSynchronize();
@@ -193,8 +194,8 @@ void Camera::render_rasterization(const int width,
     // transform the triangles and lights to the view space
     transformTrianglesAndLights<<<grid, block>>>(d_triangles,
                                                  d_lights,
-                                                 width,
-                                                 height,
+                                                 width * super_sampling_ratio,
+                                                 height * super_sampling_ratio,
                                                  triangle_num,
                                                  light_num,
                                                  sample_square,
@@ -203,10 +204,6 @@ void Camera::render_rasterization(const int width,
                                                  d_Intrinsics,
                                                  // immediate variables
                                                  d_buffer_elements);
-
-    // ? check the cuda error
-    CHECK_CUDA_ERROR(cudaGetLastError());
-
     // synchronize the device
     cudaDeviceSynchronize();
 
@@ -216,21 +213,25 @@ void Camera::render_rasterization(const int width,
 
     // set the block size and grid size
     block = dim3(BLOCK_SIZE, BLOCK_SIZE, 1);
-    grid = dim3((width + block.x - 1) / block.x, (height + block.y - 1) / block.y, 1);
+    grid = dim3((width * super_sampling_ratio + block.x - 1) / block.x, (height * super_sampling_ratio + block.y - 1) / block.y, 1);
 
     // shading
     shading<<<grid, block>>>(d_triangles,
                              d_lights,
-                             width,
-                             height,
+                             width * super_sampling_ratio,
+                             height * super_sampling_ratio,
                              triangle_num,
                              light_num,
                              d_buffer_elements,
-                             d_image);
-
-    // ? check the cuda error
-    CHECK_CUDA_ERROR(cudaGetLastError());
-
+                             d_image,
+                             // other parameters
+                             ka,
+                             kd,
+                             ks,
+                             kn,
+                             if_depthmap,
+                             if_normalmap,
+                             super_sampling_ratio);
     // synchronize the device
     cudaDeviceSynchronize();
 

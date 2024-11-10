@@ -16,6 +16,7 @@
 
 // * global settings
 #define BLOCK_SIZE 8
+#define BLOCK_SIZE_2D BLOCK_SIZE *BLOCK_SIZE
 #define MAX 1e6
 #define MAX_mesh 8000
 #define MAX_light 10
@@ -378,7 +379,7 @@ __forceinline__ __host__ __device__ float sigmoid(float x) {
 }
 
 // barrycentric
-__forceinline__ __device__ void barycentric(const float &x, const float &y,
+__forceinline__ __device__ bool barycentric(const float &x, const float &y,
                                             const float &x1, const float &y1,
                                             const float &x2, const float &y2,
                                             const float &x3, const float &y3,
@@ -390,6 +391,10 @@ __forceinline__ __device__ void barycentric(const float &x, const float &y,
     float w2 = ex2 * ey3 - ex3 * ey2;
     float w3 = ex3 * ey1 - ex1 * ey3;
 
+    if (w1 * w2 < 0 || w1 * w3 < 0) {
+        return false;
+    }
+
     float area = w1 * w2 + w2 * w3 + w3 * w1;
 
     float w1_n = w2 * w3 / area;
@@ -400,7 +405,7 @@ __forceinline__ __device__ void barycentric(const float &x, const float &y,
     v = w2_n;
     w = w3_n;
 
-    return;
+    return true;
 }
 
 #endif  // MATERIALS_CUH

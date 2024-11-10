@@ -23,8 +23,10 @@ int main() {
     // Triangle light(V3f(0.0f, 2.0f, 2.0f), V3f(0.0f, 2.0f, 0.0f), V3f(-2.0f, 2.0f, 0.0f));
     // light.set_material(light_material);
     // meshes.add_triangle(light);
-    Light l1 = Light(V4f(10.0f, 10.0f, 10.0f, 1.0f), V4f(0.0f, 5.0f, 0.0f, 1.0f), 1.0f);
+    Light l1 = Light(V4f(15.0f, 15.0f, 15.0f, 1.0f), V4f(0.0f, 5.0f, 0.0f, 1.0f), 1.0f);
     meshes.add_light(l1);
+    Light l2 = Light(V4f(10.0f, 10.0f, 10.0f, 1.0f), V4f(-3.0f, 0.0f, -2.0f, 1.0f), 1.0f);
+    meshes.add_light(l2);
 
     // * set the mirror triangle
     // Material mirror_material(2, V4f(1.0f, 1.0f, 1.0f, 1.0f));

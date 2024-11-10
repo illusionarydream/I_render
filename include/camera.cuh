@@ -28,6 +28,14 @@ class Camera {
     int samples_per_pixel = 260;
     int samples_per_kernel = 20;
 
+    // * for rasterization
+    float ka = 0.1;
+    float kd = 0.3;
+    float ks = 0.6;
+    float kn = 32.0;
+
+    int super_sampling_ratio = 4;  // cannot larger than 4
+
     // * constructors
     Camera() {
         cam_pos = V4f(0.0f, 0.0f, 0.0f, 1.0f);
