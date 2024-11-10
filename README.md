@@ -1,8 +1,9 @@
 # Illusionary Render
 
-<p align="center">
+<!-- <p align="center">
   <img src="README_image/image.png" alt="meshes of stanford bunny" />
-</p>
+</p> -->
+![](README_image/image.png)
 
 
 ## Introduction
@@ -35,9 +36,10 @@ struct Vertice{
 }
 ```
 
-<p align="center">
+<!-- <p align="center">
   <img src="README_image/The-Stanford-Bunny-shown-on-the-left-is-reconstructed-shown-on-the-right-397-points.png" alt="meshes of stanford bunny" />
-</p>
+</p> -->
+![](README_image/The-Stanford-Bunny-shown-on-the-left-is-reconstructed-shown-on-the-right-397-points.png)
 
 ### Implementation: transformation
 As for transformation, I borrowed a method from computer vision that is more fundamental and straightforward compared to the MVP (Model-View-Projection) transformation. Each camera has its own **intrinsic matrix**, **extrinsic matrix**, and **projection matrix**:
