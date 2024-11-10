@@ -86,7 +86,7 @@ class Window {
         lastX = xpos;
         lastY = ypos;
 
-        yaw += xoffset * sensitivity;
+        yaw += xoffset * sensitivity * 1.4;
         pitch += yoffset * sensitivity;
 
         if (pitch > 89.0f)

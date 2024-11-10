@@ -318,11 +318,15 @@ __global__ void shading(const Triangle *triangles,
             shared_image[idx_block] = shared_image[idx_block] + shared_lights[i].emission.toV3f() * (diffuse + specular);
         }
 
-        // depth
-        // shared_image[idx_block] = V3f(shared_depth_buffer[idx_block].depth, shared_depth_buffer[idx_block].depth, shared_depth_buffer[idx_block].depth) - V3f(7.0f, 7.0f, 7.0f);
+        // dept
+        if (if_depthmap) {
+            shared_image[idx_block] = V3f(shared_depth_buffer[idx_block].depth, shared_depth_buffer[idx_block].depth, shared_depth_buffer[idx_block].depth) - V3f(7.0f, 7.0f, 7.0f);
+        }
 
         // normal
-        // shared_image[idx_block] = (normal + V3f(1.0f, 1.0f, 1.0f)) / 2.0f;
+        if (if_normalmap) {
+            shared_image[idx_block] = (normal + V3f(1.0f, 1.0f, 1.0f)) / 2.0f;
+        }
     }
 
     // * synchronize the threads
