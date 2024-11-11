@@ -50,7 +50,7 @@ class Triangle {
         vertices[0] = v0;
         vertices[1] = v1;
         vertices[2] = v2;
-        normals[0] = cross(v1 - v0, v2 - v0);
+        normals[0] = normalize(cross(v1 - v0, v2 - v0));
         normals[1] = normals[0];
         normals[2] = normals[0];
     }

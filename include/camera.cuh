@@ -20,12 +20,12 @@ class Camera {
 
     bool if_depthmap = false;
     bool if_normalmap = false;
-    bool if_pathtracing = false;
+    bool if_pathtracing = true;
     bool if_more_kernel = false;
     bool if_show_info = false;
 
-    float russian_roulette = 0.90f;
-    int samples_per_pixel = 260;
+    float russian_roulette = 0.80f;
+    int samples_per_pixel = 300;
     int samples_per_kernel = 20;
 
     // * for rasterization
@@ -35,9 +35,17 @@ class Camera {
     float kn = 32.0;
 
     // * pre-gpu parameters
+    // rasterize
     Triangle* d_triangles;
     Light* d_lights;
     ZBuffer_element* d_buffer_elements;
+
+    // raytrace
+    Mesh* d_meshes;
+    Ray* d_rays;
+    curandState* devStates;  // for random seed support
+
+    // all
     V3f* d_image;
 
     int super_sampling_ratio = 4;  // cannot larger than 4
@@ -120,9 +128,13 @@ class Camera {
         this->cam_pos = cam_pos;
     }
 
-    void setGPUParameters(const Mesh& meshes,
-                          const int width,
-                          const int height);
+    void setGPUParameters_raytrace(const Mesh& meshes,
+                                   const int width,
+                                   const int height);
+
+    void setGPUParameters_rasterize(const Mesh& meshes,
+                                    const int width,
+                                    const int height);
 
     // store the image
     void storeImage(const std::string& filename,
@@ -138,17 +150,10 @@ class Camera {
         cv::imwrite(filename, img);
     }
 
-    // generate rays in the world coordinate system
-    void generateRay(
-        const int width,
-        const int height,
-        std::vector<Ray>& rays);
-
     // render the scene
     void render_raytrace(const int width,
                          const int height,
                          const Mesh& meshes,
-                         const std::vector<Ray>& rays,
                          std::vector<V3f>& image);
 
     void render_rasterization(const int width,

@@ -10,8 +10,8 @@
 
 #include "camera.cuh"
 
-#define IMAGE_WIDTH 800
-#define IMAGE_HEIGHT 800
+#define IMAGE_WIDTH 600
+#define IMAGE_HEIGHT 600
 
 void showProgressBar(float progress) {
     int barWidth = 70;
@@ -34,6 +34,7 @@ class Window {
     static Camera camera;
     Mesh meshes;
     static float radius;
+    bool render_type;  // 0-rasterization, 1-ray tracing
 
     // for mouse callback
     static float sensitivity;
@@ -43,29 +44,66 @@ class Window {
 
    public:
     // ! all the mesh and camera parameters are set here
-    Window(int _width = IMAGE_WIDTH, int _height = IMAGE_HEIGHT, std::string obj_path = "") {
-        // * set basic parameters
-        width = _width;
-        height = _height;
+    // ! rasterization
+    Window(int _width = IMAGE_WIDTH, int _height = IMAGE_HEIGHT, bool render_type = 0, std::string obj_path = "") {
+        if (render_type == 0)
+            this->render_type = 0;
+        else
+            this->render_type = 1;
+        if (render_type == 0) {
+            // ! rasterization
+            // * set basic parameters
+            width = _width;
+            height = _height;
 
-        // * read the mesh
-        auto triangles = load_obj(obj_path);
-        Triangle* d_triangles = triangles.data();
-        meshes.add_triangles(d_triangles, triangles.size());
+            // * read the mesh
+            auto triangles = load_obj(obj_path);
+            Triangle* d_triangles = triangles.data();
+            meshes.add_triangles(d_triangles, triangles.size());
 
-        // * set the mesh material
-        Material material(1, V4f(1.0f, 1.0f, 1.0f, 1.0f));
-        meshes.set_material(material);  // this step must be before add_triangles, because the added light will not have the material
+            // * set the mesh material
+            Material material(1, V4f(1.0f, 1.0f, 1.0f, 1.0f));
+            meshes.set_material(material);  // this step must be before add_triangles, because the added light will not have the material
 
-        // * set the light
-        Light l1 = Light(V4f(15.0f, 15.0f, 15.0f, 1.0f), V4f(0.0f, 5.0f, 0.0f, 1.0f), 1.0f);
-        meshes.add_light(l1);
-        Light l2 = Light(V4f(10.0f, 10.0f, 10.0f, 1.0f), V4f(-3.0f, 0.0f, -2.0f, 1.0f), 1.0f);
-        meshes.add_light(l2);
+            // * set the light
+            Light l1 = Light(V4f(15.0f, 15.0f, 15.0f, 1.0f), V4f(0.0f, 5.0f, 0.0f, 1.0f), 1.0f);
+            meshes.add_light(l1);
+            Light l2 = Light(V4f(10.0f, 10.0f, 10.0f, 1.0f), V4f(-3.0f, 0.0f, -2.0f, 1.0f), 1.0f);
+            meshes.add_light(l2);
 
-        // * set the camera
-        camera.setIntrinsics(2.0f, 2.0f, 0.5f, 0.5f, 0.0f);
-        camera.setExtrinsics(V4f(0.0f, 0.0f, radius, 1.0f), V4f(0.0f, 0.0f, -1.0f, 1.0f), V4f(0.0f, -1.0f, 0.0f, 0.0f));  // initial position of the camera
+            // * set the camera
+            camera.setIntrinsics(2.0f, 2.0f, 0.5f, 0.5f, 0.0f);
+            camera.setExtrinsics(V4f(0.0f, 0.0f, radius, 1.0f), V4f(0.0f, 0.0f, -1.0f, 1.0f), V4f(0.0f, -1.0f, 0.0f, 0.0f));  // initial position of the camera
+        } else {
+            // ! ray tracing
+            // * set basic parameters
+            width = _width;
+            height = _height;
+
+            // * read the mesh
+            auto triangles = load_obj(obj_path);
+            Triangle* d_triangles = triangles.data();
+            meshes.add_triangles(d_triangles, triangles.size());
+
+            // * set the mesh material
+            Material material(1, V4f(1.0f, 1.0f, 1.0f, 1.0f));
+            meshes.set_material(material);  // this step must be before add_triangles, because the added light will not have the material
+
+            // * set the light
+            Triangle light_tri(V3f(10.0f, 5.0f, 10.0f),
+                               V3f(-10.0f, 5.0f, 0.0f),
+                               V3f(10.0f, 5.0f, -10.0f));
+            Material light_material(0, V4f(2.0f, 2.0f, 2.0f, 1.0f));
+            light_tri.set_material(light_material);
+            meshes.add_triangle(light_tri);
+
+            // * build BVH
+            meshes.build_BVH();
+
+            // * set the camera
+            camera.setIntrinsics(2.0f, 2.0f, 0.5f, 0.5f, 0.0f);
+            camera.setExtrinsics(V4f(0.0f, 0.0f, radius, 1.0f), V4f(0.0f, 0.0f, 0.0f, 1.0f), V4f(0.0f, 1.0f, 0.0f, 0.0f));  // initial position of the camera
+        }
     }
 
     static void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
@@ -107,7 +145,7 @@ class Window {
 
         // calculate the camera up vector
         glm::vec3 camera_x = glm::normalize(glm::cross(glm::vec3(camera_pos[0], camera_pos[1], camera_pos[2]), glm::vec3(0.0f, 1.0f, 0.0f)));
-        glm::vec3 camera_y = glm::normalize(glm::cross(glm::vec3(camera_pos[0], camera_pos[1], camera_pos[2]), camera_x));
+        glm::vec3 camera_y = glm::normalize(glm::cross(camera_x, glm::vec3(camera_pos[0], camera_pos[1], camera_pos[2])));
 
         camera_up[0] = camera_y.x;
         camera_up[1] = camera_y.y;
@@ -123,10 +161,16 @@ class Window {
         std::vector<V3f> image(height * width);
 
         // prepare the camera parameters
-        camera.setGPUParameters(meshes, width, height);
+        if (render_type == 1)
+            camera.setGPUParameters_raytrace(meshes, width, height);
+        else
+            camera.setGPUParameters_rasterize(meshes, width, height);
 
         while (!glfwWindowShouldClose(window)) {
-            camera.render_rasterization(height, width, meshes, image);
+            if (render_type == 1)
+                camera.render_raytrace(height, width, meshes, image);
+            else
+                camera.render_rasterization(height, width, meshes, image);
 
             glClear(GL_COLOR_BUFFER_BIT);
             glDrawPixels(width, height, GL_RGB, GL_FLOAT, image.data());

@@ -170,7 +170,6 @@ __global__ void raytrace(const Mesh *mesh,
                                 temp_col = temp_col * albedo * cos_theta / russian_roulette;
                                 // set the new ray
                                 temp_ray = new_ray;
-
                             } else {
                                 // set the color of the pixel
                                 temp_col = V4f(0.0f, 0.0f, 0.0f, 1.0f);

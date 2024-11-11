@@ -82,6 +82,8 @@ class Material {
             albedo = this->albedo;  // the albedo is the color of the light
             // no reflection
             wo = Ray(collision, V4f(0.0f, 0.0f, 0.0f, 0.0f));
+
+            printf("light\n");
             return false;
         }
         // *1: lambertian
