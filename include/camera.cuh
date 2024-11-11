@@ -20,7 +20,7 @@ class Camera {
 
     bool if_depthmap = false;
     bool if_normalmap = false;
-    bool if_pathtracing = true;
+    bool if_pathtracing = false;
     bool if_more_kernel = false;
     bool if_show_info = false;
 

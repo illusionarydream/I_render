@@ -140,7 +140,7 @@ This combination of ambient, diffuse, and specular illumination produces realist
 ![](/README_image/Phong_components_version_4.png)
 
 ### Pipeline
-In I_render, our pipeline can be roughly divided into the following steps:
+In `I_render`, our pipeline can be roughly divided into the following steps:
 - The first step is to read the data and initialize various parameters.
 - The second step is to project the triangular mesh onto a plane based on depth, obtaining the spatial point and its related information for each pixel.
 - The third step is to perform shading for each spatial point corresponding to the pixel.
@@ -174,25 +174,307 @@ The specific computation progress has been explained on the former text. And as 
 ### Gallery
 In this chapter, I will showcase the results achieved by `I_render`.
 #### Depth map
-<video width="400" height="400" controls>
-  <source src="README_image/Peek 2024-11-11 13-40.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+
+![](README_image/Peek-2024-11-11-13-40.gif)
 
 #### Normal map
-<video width="400" height="400" controls>
-  <source src="README_image/Peek 2024-11-10 22-03.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+![](README_image/Peek-2024-11-10-22-03_1.gif)
 
 #### Diffuse model
-<video width="400" height="400" controls>
-  <source src="README_image/Peek 2024-11-11 13-45.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+![](README_image/Peek-2024-11-11-13-45.gif)
+
 
 #### Metal model
-<video width="400" height="400" controls>
-  <source src="README_image/Peek 2024-11-11 13-46.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+![](README_image/Peek-2024-11-11-13-46.gif)
+
+
+## Cuda raytracing
+### Brief Intro
+In my understanding, a complete ray tracing engine typically includes the following key components:
+- **Generate rays**: The process of generating rays primarily involves emitting rays from the camera toward each pixel on the view plane, converting each ray into a corresponding line in the world coordinate system.
+- **Geometry Intersection Calculations**: This component calculates intersections between rays and objects within the scene, determining if and where a ray intersects with geometry like triangles, spheres, or other shapes.
+- **Ray Color Calculation**: This step determines the color of each ray based on lighting, materials, and shading models. It calculates the color by evaluating the effects of light sources, reflections, refractions, and surface properties at the intersection points.
+- **Scattering**: Scattering refers to the process of simulating the behavior of light when it interacts with surfaces or media. In ray tracing, this can involve phenomena like reflection, refraction, or transmission of light through transparent materials, as well as the diffusion of light in materials like fog or translucent objects. Scattering helps achieve realistic lighting effects such as soft shadows, glossy surfaces, and caustics.
+
+In `I_render`, I seperately build these several components and I will detail them in the following text.
+
+### Implementation: generate ray
+In the ray generation step, the inputs are the camera's intrinsic and extrinsic parameters, as well as the pixel positions on the camera plane. Since the computation for each ray is highly parallelizable, I implemented pixel-level parallelism. Each kernel function handles the generation of a ray corresponding to a single pixel.
+
+#### Camera Coordinate System to World Coordinate System Transformation
+
+   The camera's intrinsic and extrinsic parameters are used to transform from camera coordinates to world coordinates. The equation for this transformation is:
+
+   \[
+   \mathbf{r}_{world} = \mathbf{R} \cdot \mathbf{r}_{camera} + \mathbf{t}
+   \]
+
+   Where:
+   - \(\mathbf{r}_{world}\) is the ray in world coordinates.
+   - \(\mathbf{R}\) is the rotation matrix from camera to world space.
+   - \(\mathbf{t}\) is the translation vector (camera position in world space).
+   - \(\mathbf{r}_{camera}\) is the ray in camera coordinates (a vector in the camera plane).
+
+#### Ray Equation for a Given Pixel
+
+   For a given pixel at coordinates \((x, y)\) on the camera plane, we calculate the ray direction in the camera space. This can be done by projecting the pixel’s position in 3D space, taking into account the field of view (focal length) and the aspect ratio:
+
+   \[
+   \mathbf{r}_{camera} = \left( \frac{(x - \text{width}/2)}{f_x}, \frac{(y - \text{height}/2)}{f_y}, -1 \right)
+   \]
+
+   Where:
+   - \((x, y)\) are the pixel coordinates on the camera plane.
+   - \(\text{width}, \text{height}\) are the resolution of the image.
+   - \(f_x, f_y\) are the focal lengths in the x and y directions (derived from the camera intrinsic matrix).
+
+#### Ray Generation in World Coordinates
+
+   After computing the ray direction in camera coordinates, we transform it to world coordinates using the camera's extrinsic parameters:
+
+   \[
+   \mathbf{r}_{world} = \mathbf{R} \cdot \mathbf{r}_{camera} + \mathbf{t}
+   \]
+
+#### Final Ray Equation
+
+   The ray can now be represented as:
+
+   \[
+   \mathbf{R}(t) = \mathbf{O} + t \cdot \mathbf{r}_{world}
+   \]
+
+   Where:
+   - \(\mathbf{R}(t)\) is the ray in world coordinates at time \(t\).
+   - \(\mathbf{O}\) is the origin of the camera (the camera position).
+   - \(t\) is the parameter that determines the ray's position along its direction.
+
+This process computes the direction and origin of each ray generated from each pixel on the camera plane, allowing us to trace rays into the scene.
+
+
+### Implementation: intersection calculation
+For the collision calculation, since the focus of the I_render engine is not on the richness of geometric representation, all geometry (including light sources, which are also considered a form of geometry) in the ray tracing section is represented using triangular meshes. Therefore, the problem simplifies to finding the intersection points between rays and triangles.
+
+#### Möller-Trumbore Intersection Algorithm
+
+The Möller-Trumbore algorithm efficiently calculates the intersection of a ray and a triangle. Given a ray \( \mathbf{R}(t) = \mathbf{O} + t \cdot \mathbf{d} \) and a triangle with vertices \( \mathbf{v}_0, \mathbf{v}_1, \mathbf{v}_2 \), the algorithm computes if and where the ray intersects the triangle.
+
+- Compute edge vectors:  
+   \( \mathbf{e}_1 = \mathbf{v}_1 - \mathbf{v}_0 \), \( \mathbf{e}_2 = \mathbf{v}_2 - \mathbf{v}_0 \)
+
+- Compute the cross product of the ray direction and edge vector:  
+   \( \mathbf{h} = \mathbf{d} \times \mathbf{e}_2 \)
+
+- Compute the determinant:  
+   \( a = \mathbf{e}_1 \cdot \mathbf{h} \)
+
+- If \( |a| \) is small, the ray is parallel to the triangle, and there is no intersection.
+
+- Compute the intersection parameters:  
+   \( \mathbf{s} = \mathbf{O} - \mathbf{v}_0 \),  
+   \( u = \frac{\mathbf{s} \cdot \mathbf{h}}{a} \)  
+   If \( u < 0 \) or \( u > 1 \), the intersection is outside the triangle.
+
+- Compute the second parameter:  
+   \( \mathbf{q} = \mathbf{s} \times \mathbf{e}_1 \),  
+   \( v = \frac{\mathbf{d} \cdot \mathbf{q}}{a} \)  
+   If \( v < 0 \) or \( u + v > 1 \), the intersection is outside the triangle.
+
+- Compute the intersection point:  
+   \( t = \frac{\mathbf{e}_2 \cdot \mathbf{q}}{a} \)  
+   If \( t > 0 \), the ray intersects the triangle at \( \mathbf{O} + t \cdot \mathbf{d} \).
+
+#### BVH structure
+To accelerate the computation of ray-triangle intersections, I have reorganized and structured all the triangles using a **Bounding Volume Hierarchy** (BVH). 
+
+A BVH is a tree-based data structure where each node represents a bounding volume that contains a subset of the scene's triangles. The leaf nodes of the BVH contain individual triangles, while the internal nodes contain bounding volumes that encapsulate the triangles in their child nodes.
+
+The key advantage of using a BVH is that it allows for **efficient intersection tests** by enabling early termination in ray-triangle intersection checks. Instead of checking every triangle in the scene, we first test the ray against the bounding volumes. If a ray does not intersect a bounding volume, we can immediately discard all triangles within that volume, significantly reducing the number of intersection tests.
+
+This hierarchical approach minimizes unnecessary calculations and accelerates the overall rendering process. I will detail the specific construction progress and collision query progress of the BVH tree through the pseudo code.
+
+- **BVH Tree Construction**
+```pseudo
+function BuildBVH(triangles):
+    if triangles.count() <= MAX_TRIANGLES_PER_LEAF:
+        return CreateLeafNode(triangles)
+    
+    # Calculate bounding box for all triangles
+    boundingVolume = CalculateBoundingVolume(triangles)
+    
+    # Split triangles based on spatial median or longest axis
+    (leftTriangles, rightTriangles) = SplitTriangles(triangles)
+    
+    # Recursively build child nodes
+    leftChild = BuildBVH(leftTriangles)
+    rightChild = BuildBVH(rightTriangles)
+    
+    # Create a BVH node with bounding volume and children
+    return CreateBVHNode(boundingVolume, leftChild, rightChild)
+```
+- **BVH Collision Query (Ray Traversal)**
+```
+function IntersectBVH(node, ray):
+    if not IntersectBoundingVolume(node.boundingVolume, ray):
+        return NO_HIT
+
+    if node is LeafNode:
+        closestHit = NO_HIT
+        for triangle in node.triangles:
+            hit = IntersectTriangle(triangle, ray)
+            if hit and (closestHit == NO_HIT or hit.distance < closestHit.distance):
+                closestHit = hit
+        return closestHit
+
+    # Recurse through children and check intersections
+    leftHit = IntersectBVH(node.leftChild, ray)
+    rightHit = IntersectBVH(node.rightChild, ray)
+
+    if leftHit == NO_HIT:
+        return rightHit
+    if rightHit == NO_HIT:
+        return leftHit
+    return leftHit if leftHit.distance < rightHit.distance else rightHit
+```
+In this pseudocode:
+- `BuildBVH` constructs the BVH tree by recursively splitting triangles and creating bounding volumes for each node.
+- `IntersectBVH` performs a ray traversal to find the closest intersection by checking bounding volumes and, if necessary, testing each triangle in the leaf nodes.
+![](README_image/image_copy.png)
+
+
+### Implementation: color calculation
+In the ray tracing engine, the color calculation is based on classic radiometry principles, where the light contribution from various paths is combined to determine the color at each point. This approach involves calculating the radiance (the amount of light energy) arriving at the camera along each ray. The process includes direct illumination, indirect illumination, and various light interactions such as reflection and refraction.
+
+![](README_image/image2.png)
+
+
+#### Steps of Radiometric Color Calculation
+
+- **Direct Illumination**
+   Direct illumination accounts for light that travels directly from light sources to surfaces. For each surface point hit by a ray, we calculate the radiance contribution from each light source that is not blocked by an object (shadow test). The direct illumination is calculated using the rendering equation:
+
+   \[
+   L_o(p, \omega_o) = L_e(p, \omega_o) + \int_\Omega f_r(p, \omega_i, \omega_o) L_i(p, \omega_i) (\mathbf{n} \cdot \omega_i) \, d\omega_i
+   \]
+
+   Where:
+   - \( L_o(p, \omega_o) \) is the outgoing radiance at point \( p \) in direction \( \omega_o \).
+   - \( L_e(p, \omega_o) \) is the emitted radiance from the point (for light sources).
+   - \( f_r(p, \omega_i, \omega_o) \) is the bidirectional reflectance distribution function (BRDF), describing how light reflects at the surface.
+   - \( L_i(p, \omega_i) \) is the incoming radiance from direction \( \omega_i \).
+   - \( \mathbf{n} \cdot \omega_i \) accounts for the angle between the incoming light and the surface normal \( \mathbf{n} \), ensuring accurate brightness based on surface orientation.
+
+- **Indirect Illumination**
+   Indirect illumination considers light that bounces off other surfaces before reaching the point of interest. This includes diffuse interreflections and glossy reflections, which add realism to the scene by capturing complex light paths. Indirect illumination can be calculated through recursive ray tracing, where secondary rays are spawned from the intersection point to sample light from other surfaces.
+
+- **Reflection and Refraction**
+   For reflective and transparent surfaces, reflection and refraction rays are traced to capture light bouncing off or passing through surfaces. The reflection direction \( \omega_r \) is calculated using:
+
+   \[
+   \omega_r = \omega_o - 2(\omega_o \cdot \mathbf{n}) \mathbf{n}
+   \]
+
+   Refraction is calculated based on Snell's Law, considering the indices of refraction of the two media. This results in a transmission direction \( \omega_t \) determined by:
+
+   \[
+   \eta_i \sin \theta_i = \eta_t \sin \theta_t
+   \]
+
+   where \( \eta_i \) and \( \eta_t \) are the indices of refraction of the incident and transmitted media, respectively.
+
+- **Final Color Computation (Recursive Ray Tracing)**
+   The total color at each pixel is computed by combining the radiance from direct and indirect illumination, reflection, and refraction. For each ray, we recursively trace secondary rays based on material properties until reaching a termination condition (e.g., a maximum recursion depth or negligible radiance contribution). The final color is an accumulation of these radiance contributions weighted by the surface’s BRDF, Fresnel effects, and material absorption factors.
+
+- **Global Illumination (Monte Carlo Integration)**
+   To handle complex lighting scenarios, such as caustics and ambient light bounces, Monte Carlo integration can be used. By sampling many rays per pixel and averaging the results, we approximate the integral of radiance over all possible paths, leading to more realistic global illumination effects.
+
+This radiometric approach in ray tracing, based on the rendering equation, accurately simulates light transport to produce lifelike images by combining direct and indirect lighting, reflection, and refraction. Each of these steps contributes to the realistic portrayal of surfaces and light interactions within a scene.
+
+### Implementation: scatter
+In the scattering module, the main consideration is the direction in which a ray will continue after colliding with a surface. This continuation is dictated by the surface properties and the physics of light-surface interaction, commonly modeled by the Bidirectional Reflectance Distribution Function (BRDF). The BRDF essentially defines the probability of light scattering in various directions from a given surface, based on the angle of incidence.
+
+#### Key Elements of Scattering Calculation
+
+- **BRDF and Scattering Direction**
+   The BRDF, \( f_r(p, \omega_i, \omega_o) \), is a function that represents how light is reflected at an opaque surface. It is defined as the ratio of reflected radiance leaving the surface in direction \( \omega_o \) to the incoming irradiance arriving from direction \( \omega_i \). The BRDF controls the scattering direction after a ray intersects with a surface, describing both diffuse and specular reflection components.
+
+- **Probability Density Function (PDF)**
+   Since the BRDF defines how light is likely to scatter, it can be interpreted as a probability density function (PDF) over outgoing directions for a fixed incoming direction. When a ray hits a surface, the probability of scattering in a particular direction \( \omega_o \) is proportional to the value of the BRDF for that direction. This probabilistic approach is key to sampling directions in path tracing, where each outgoing direction is chosen based on this PDF.
+
+- **Sampling the Scattering Direction**
+   To determine the direction of the scattered ray, we sample according to the BRDF's PDF:
+   
+   - **Diffuse surfaces** (Lambertian reflectors): For purely diffuse surfaces, the BRDF is constant and scattering directions are uniformly sampled over the hemisphere around the surface normal, as these materials scatter light equally in all directions.
+   - **Specular surfaces** (glossy or mirror-like): For reflective surfaces, the BRDF is sharply peaked around the mirror direction. Sampling is concentrated around this direction, leading to reflection rays close to the ideal reflection angle.
+   - **Glossy surfaces**: Materials with a glossy or rough surface exhibit a combination of diffuse and specular characteristics. The BRDF in these cases often has a lobe around the reflection direction, with the scattering direction sampled based on the roughness parameter, which determines the width of this lobe.
+
+- **Monte Carlo Integration for Scattering**
+   The scattered directions contribute to the final color at the point, as each scattered ray will in turn intersect other surfaces and collect light from them. Using Monte Carlo integration, we sample several directions according to the BRDF's PDF and calculate the light contributions along these paths. The result is averaged to approximate the integral of reflected radiance, providing an accurate representation of scattering effects.
+
+- **Importance Sampling**
+   In practice, importance sampling is used to optimize the selection of outgoing directions, focusing on directions with higher probabilities as defined by the BRDF. This reduces variance in the color calculations, as more rays are concentrated in directions that significantly contribute to the final radiance.
+
+### Pipeline
+In `I_render`, ray tracing is implemented with pixel-level parallelism, where each kernel function is dedicated to calculating the color for a single pixel. The overall pipeline follows the classic path tracing algorithm, with each kernel function performing the following steps:
+
+#### Path Tracing Algorithm for Each Pixel
+
+- **Initialize Ray**
+  - Start with a primary ray from the camera position through the pixel on the image plane.
+  - Initialize accumulated color (radiance) and attenuation factors.
+
+- **Trace Path (Loop for Each Bounce)**
+  Repeat for a fixed number of bounces (or until a termination condition is met).
+
+   ```pseudo
+   while bounces < MAX_BOUNCES and ray not terminated:
+       # Intersect ray with scene
+       hit = IntersectScene(ray)
+       
+       if hit:
+           # Calculate direct lighting from hit point
+           directLight = CalculateDirectLight(hit, ray)
+           
+           # Accumulate direct light contribution
+           accumulatedColor += attenuation * directLight
+           
+           # Sample new direction based on material's BRDF
+           newDirection = SampleDirection(hit.normal, hit.material.BRDF)
+           attenuation *= hit.material.BRDF(newDirection) * (hit.normal · newDirection)
+           
+           # Update ray for the next bounce
+           ray.origin = hit.point
+           ray.direction = newDirection
+           
+       else:
+           # If no hit, accumulate background color (environment light)
+           accumulatedColor += attenuation * EnvironmentLight(ray)
+           break
+           
+       # Increment bounce count
+       bounces += 1
+  ```
+- **Apply Russian Roulette for Early Termination**
+
+    For optimization, apply Russian Roulette to probabilistically terminate paths with low contribution to reduce the number of calculations in deep bounces, while preserving energy conservation.
+    ```
+    if Random() < RUSSIAN_ROULETTE_PROBABILITY:
+    break
+    ```
+- **Store Final Color**
+  Once the maximum number of bounces is reached or the path is terminated, store the accumulated color in the pixel's final output.
+
+This document outlines the per-pixel path tracing process with full pseudocode and an explanation of each key step in the algorithm. The following flowchart outlines the steps in the per-pixel path tracing algorithm within `I_render`. Each kernel function executes these steps independently for each pixel, allowing for highly parallelized color computation.
+
+![](README_image/Untitled_Diagram.drawio(1).png)
+
+
+### Gallery
+In this chapter, I will showcase the results achieved by `I_render`.
+
+#### Mirror effect
+![](output/output.jpg)
+![](output/output_2.jpg)
+
+#### Real-time Raytrace
+![](README_image/Peek-2024-11-11-15-33.gif)
