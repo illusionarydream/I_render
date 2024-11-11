@@ -30,8 +30,8 @@ class Camera {
 
     // * for rasterization
     float ka = 0.1;
-    float kd = 0.3;
-    float ks = 0.6;
+    float kd = 0.1;
+    float ks = 1.2;
     float kn = 32.0;
 
     // * pre-gpu parameters

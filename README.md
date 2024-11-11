@@ -8,10 +8,10 @@
 
 ## Introduction
 `I_render` is a rendering engine developed by Illusionary. In this project, my goal is to improve the rendering speed by applying CUDA programming. The entire task is divided into two parts:
-- CUDA rasterization
+- **CUDA rasterization**
   The CUDA rasterization part is primarily responsible for converting 3D scenes into 2D images. By leveraging the parallel computing power of the GPU, we can significantly speed up the rasterization process, resulting in faster rendering times.
 
-- CUDA ray tracing
+- **CUDA ray tracing**
   The CUDA ray tracing part is used to simulate the propagation and reflection of light within the scene. Through CUDA programming, we can efficiently compute the interactions between light and objects, producing high-quality images.
 
 The combination of these two parts allows `I_render` to achieve faster rendering speeds while maintaining high image quality.
@@ -115,6 +115,8 @@ Specular illumination is the light that is reflected in a particular direction, 
 - **Diffuse Illumination**:
 Diffuse illumination is the light that hits a surface and is scattered in all directions, giving the surface a matte appearance. It is directly dependent on the angle between the surface normal and the incoming light direction, as described by Lambert's cosine law.
 
+![](/README_image/phong.png)
+
 The final illumination \(I\) for a point on a surface is the sum of these three components:
 $$ I = I_{ambient} + I_{diffuse} + I_{specular} $$
 
@@ -134,3 +136,63 @@ Where:
   - \( n \) is the shininess exponent.
 
 This combination of ambient, diffuse, and specular illumination produces realistic lighting effects, simulating how light interacts with surfaces to create depth and highlight details in 3D rendering.
+
+![](/README_image/Phong_components_version_4.png)
+
+### Pipeline
+In I_render, our pipeline can be roughly divided into the following steps:
+- The first step is to read the data and initialize various parameters.
+- The second step is to project the triangular mesh onto a plane based on depth, obtaining the spatial point and its related information for each pixel.
+- The third step is to perform shading for each spatial point corresponding to the pixel.
+  
+I will seperately introduce these three steps.
+
+![](/README_image/Untitled%20Diagram.drawio.png)
+
+#### First step: initialize
+During the initialization process, we need to do the following tasks:
+- We need to read the triangular mesh information in OBJ format and store it in the GPU.
+- We need to set the camera viewpoint, camera position, and the camera intrinsic matrix (focal length).
+- We need to set up the point light source, including its position, color, and intensity information and and store it in the GPU.
+
+#### Second step: projection
+During the process of projecting the triangular mesh, we need to transform the mesh from the world coordinate system to the camera coordinate system, as described earlier. This allows us to perform depth visibility testing more easily.
+
+This transformation process is straightforward due to the relative independence of the triangular meshes. **We can perform parallel computation between the triangles**. Each CUDA kernel function only needs to multiply the coordinates of the three vertices of a triangle by the camera's extrinsic matrix. For the three vertices' normals, we multiply by the inverse of the extrinsic matrix to obtain the transformed **vertex coordinates** and **normal directions** in the camera coordinate system.
+
+Next, we need to perform depth testing. Following the **Z-buffer method**, we again leverage parallelism at the triangular mesh level. Each CUDA kernel function traverses the entire triangle and, for each pixel projected onto the view plane, compares the distance from the point to the view plane with the value in the Z-buffer. If the distance is smaller, it indicates that the point is closer to the view plane, and we need to update the Z-buffer value. Additionally, we store the information of this point, such as the interpolated normal, its position in the camera coordinate system, and so on.
+
+However, because the depth testing between each triangle is parallel, there is a possibility of two triangles competing for the same Z-buffer position, leading to data synchronization and conflict issues. To address this, I have redefined an **atomic operation** for the class to ensure that the comparison and update of the data are done safely and correctly.
+
+#### Third step: shading
+In the shading stage, since we previously obtained the spatial information for each pixel in the second step, we can use **pixel-level parallel computation** here. Each kernel function handles the shading of a single pixel. I applied the Blinn-Phong shading model for this step. The input and output of this stage is:
+- Input: view position, point position, point normal, light position, light emission color, light intensity.
+- Output: pixel color
+
+The specific computation progress has been explained on the former text. And as with other rendering engines, the shader module is inherently **extensible**, allowing us to design custom shaders to achieve various effects. `I_render` primarily establishes a basic rasterization model within a parallel processing framework to achieve optimal rendering speed.
+
+### Gallery
+In this chapter, I will showcase the results achieved by `I_render`.
+#### Depth map
+<video width="400" height="400" controls>
+  <source src="README_image/Peek 2024-11-11 13-40.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+#### Normal map
+<video width="400" height="400" controls>
+  <source src="README_image/Peek 2024-11-10 22-03.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+#### Diffuse model
+<video width="400" height="400" controls>
+  <source src="README_image/Peek 2024-11-11 13-45.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+#### Metal model
+<video width="400" height="400" controls>
+  <source src="README_image/Peek 2024-11-11 13-46.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
