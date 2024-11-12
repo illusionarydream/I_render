@@ -145,7 +145,7 @@ class Window {
 
         // calculate the camera up vector
         glm::vec3 camera_x = glm::normalize(glm::cross(glm::vec3(camera_pos[0], camera_pos[1], camera_pos[2]), glm::vec3(0.0f, 1.0f, 0.0f)));
-        glm::vec3 camera_y = glm::normalize(glm::cross(camera_x, glm::vec3(camera_pos[0], camera_pos[1], camera_pos[2])));
+        glm::vec3 camera_y = glm::normalize(glm::cross(glm::vec3(camera_pos[0], camera_pos[1], camera_pos[2]), camera_x));
 
         camera_up[0] = camera_y.x;
         camera_up[1] = camera_y.y;

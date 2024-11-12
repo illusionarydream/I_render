@@ -16,6 +16,54 @@
 
 The combination of these two parts allows `I_render` to achieve faster rendering speeds while maintaining high image quality.
 
+## Tutorial
+In this module, we will provide a brief introduction to using `I_render`. This section will cover the basic setup and essential functions needed to get started with this 3D rendering module, particularly focusing on leveraging CUDA parallelization for enhanced performance.
+
+### Setup
+To use `I_render`, ensure the following C++ libraries are installed:
+
+- **Eigen**: For matrix operations and linear algebra computations.
+- **CUDA**: For GPU-based parallelization to speed up rendering processes.
+- **OpenCV** (optional): For image processing and camera transformations, if your project involves image-based operations.
+- **GLM**: A C++ mathematics library for graphics software, useful for handling vectors, matrices, and transformations in 3D graphics.
+- **GLEW** (OpenGL Extension Wrangler Library): For managing OpenGL extensions if rendering involves OpenGL integration.
+- **OpenGL**: For 3D graphics rendering, enabling hardware-accelerated rendering capabilities in `I_render`.
+
+Ensure these dependencies are properly set up to compile and run `I_render` efficiently.
+
+### Run
+You can directly run the `run.sh` bash in your terminal. To more details, you can modify the `src/main.cpp`, `include/camera.cuh` to get more kinds of output.
+
+- `main.cpp`
+```
+Window win(IMAGE_WIDTH, IMAGE_HEIGHT, type, obj_file_name);
+
+IMAGE_WIDTH: the resolution width of your final output.
+IMAGE_HEIGHT: the resolution height of your final output.
+type: use raytracer or rasterize.
+obj_file_name: the mesh file.
+```
+- `camera.cuh`
+```
+bool if_depthmap = false;    // if output the depth map or not
+bool if_normalmap = false;   // if output the normal map or not
+bool if_pathtracing = false; // if pathtracing or not
+bool if_more_kernel = false; // if use more than one kernel for each pixel
+bool if_show_info = false;   // if show the information during the rendering progress
+
+float russian_roulette = 0.80f; // RR ratio
+int samples_per_pixel = 300;    // each pixel samples number
+int samples_per_kernel = 20;    // each pixel kernel number
+
+// * for rasterization
+float ka = 0.1;  // ambient light ratio
+float kd = 0.1;  // diffuse light ratio
+float ks = 1.2;  // specular light ratio
+float kn = 32.0; // exponent
+```
+
+I will present some samples in the `Gallery` part.
+
 ## Cuda rasterization
 ### Brief Intro
 In my opinion, each rendering engine has several important parts. Even though different renderers have distinct approaches to optimization and implementation, they all consider the following key issues:
@@ -478,3 +526,4 @@ In this chapter, I will showcase the results achieved by `I_render`.
 
 #### Real-time Raytrace
 ![](README_image/Peek-2024-11-11-15-33.gif)
+
