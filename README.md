@@ -524,6 +524,16 @@ In this chapter, I will showcase the results achieved by `I_render`.
 ![](output/output.jpg)
 ![](output/output_2.jpg)
 
-#### Real-time Raytrace
+#### Real-time Raytrace: basic shading
 ![](README_image/Peek-2024-11-11-15-33.gif)
 
+#### Real-time Raytrace: soft shadow
+![](README_image/Peek-2024-11-12-21-48_1.gif)
+
+#### Real-time Raytrace: reflect
+![](README_image/Peek-2024-11-12-21-53_1.gif)
+![](README_image/Peek-2024-11-12-21-54_1.gif)
+![](README_image/Peek-2024-11-12-21-51_1.gif)
+
+#### Real-time Raytrace: refract
+![](README_image/Peek-2024-11-12-22-11.gif)
