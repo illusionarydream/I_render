@@ -25,7 +25,7 @@ class Camera {
     bool if_show_info = false;
 
     float russian_roulette = 0.80f;
-    int samples_per_pixel = 300;
+    int samples_per_pixel = 100;
     int samples_per_kernel = 20;
 
     // * for rasterization

@@ -24,6 +24,9 @@ class Material {
     // for metal material
     float fuzz;  // the fuzziness of the metal
 
+    // for refractive material
+    float ref_idx;  // the refractive index
+
     // * constructor
     // default constructor: lambertian material
     __host__ __device__ Material() {
@@ -50,10 +53,17 @@ class Material {
         }
         fuzz = 0.0f;
     }
-    // for metal material
+    // for metal material and refractive material
     __host__ __device__ Material(int type, const V4f &a, const float f) : type(type),
-                                                                          albedo(a),
-                                                                          fuzz(f) {
+                                                                          albedo(a) {
+        if (type == 2) {
+            fuzz = f;
+        } else if (type == 3) {
+            ref_idx = f;
+        } else {
+            fuzz = 0.0f;
+            ref_idx = 1.0f;
+        }
         if_light = false;
     }
 
@@ -64,6 +74,27 @@ class Material {
         V4f reflected = n * 2.0f - v;
 
         return reflected;
+    }
+
+    // for refractive material
+    // the v and output are both outgoing
+    __host__ __device__ bool refract(const V4f &v, const V4f &n, float ni_over_nt, V4f &refracted) const {
+        V4f uv = normalize(v);
+        float dt = dot(uv, n);
+        float discriminant = 1.0f - ni_over_nt * ni_over_nt * (1.0f - dt * dt);
+        if (discriminant > 0.0f) {
+            refracted = (uv - n * dt) * ni_over_nt - n * sqrt(discriminant);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // shlick's approximation
+    __host__ __device__ float schlick(float cosine, float ref_idx) const {
+        float r0 = (1.0f - ref_idx) / (1.0f + ref_idx);
+        r0 = r0 * r0;
+        return r0 + (1.0f - r0) * pow((1.0f - cosine), 5.0f);
     }
 
     // * scatter function
@@ -83,7 +114,6 @@ class Material {
             // no reflection
             wo = Ray(collision, V4f(0.0f, 0.0f, 0.0f, 0.0f));
 
-            printf("light\n");
             return false;
         }
         // *1: lambertian
@@ -103,6 +133,43 @@ class Material {
             V4f diro = reflected + random_in_unit_sphere_V4f(state) * fuzz;
             wo = Ray(collision, diro);
             wo.orig = wo(MIN_surface);
+            return true;
+        }
+        // *3. refractive
+        else if (type == 3) {
+            albedo = this->albedo;  // the albedo is the color of the material
+            // refraction
+            V4f outward_normal;
+            float ni_over_nt;
+            float cosine;
+            float reflect_prob;
+            float reflectance;
+
+            V4f reflected = reflect(wi.dir * -1.0f, normal);
+            if (dot(wi.dir, normal) > 0.0f) {
+                outward_normal = normal * -1.0f;
+                ni_over_nt = ref_idx;
+                cosine = ref_idx * dot(wi.dir, normal);
+            } else {
+                outward_normal = normal;
+                ni_over_nt = 1.0f / ref_idx;
+                cosine = -dot(wi.dir, normal);
+            }
+
+            V4f refracted;
+            if (refract(wi.dir, outward_normal, ni_over_nt, refracted)) {
+                reflect_prob = schlick(cosine, ref_idx);
+            } else {
+                reflect_prob = 1.0f;
+            }
+
+            if (random_float(state) < reflect_prob) {
+                wo = Ray(collision, reflected);
+            } else {
+                wo = Ray(collision, refracted);
+            }
+            wo.orig = wo(MIN_surface);
+
             return true;
         }
         return false;

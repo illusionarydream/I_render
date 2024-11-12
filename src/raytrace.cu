@@ -32,7 +32,7 @@ __global__ void generateRayKernel(const M4f *Inv_Extrinsic,
         // generate ray from camera to the pixel (x, y)
         V3f p_film((x + 0.5f) / width, (y + 0.5f) / height, 1.0f);
         V3f p_camera3 = (*Inv_Intrinsic) * p_film;
-        auto p_camera = V4f(p_camera3[0], p_camera3[1], -1.0f, 1.0f);
+        auto p_camera = V4f(-p_camera3[0], -p_camera3[1], -1.0f, 1.0f);
         V4f p_world = (*Inv_Extrinsic) * p_camera;
 
         // set the origin and direction of the ray
