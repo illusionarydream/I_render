@@ -95,14 +95,12 @@ As for transformation, I borrowed a method from computer vision that is more fun
 - **Intrinsic Matrix**:
     The intrinsic matrix $I_{3 \times3}$ represents the camera's internal parameters, such as focal length and the aspect ratio of the x and y coordinates. It can be understood as the **viewport transformation**, which maps the coordinates from the camera's image plane to the screen space. The intrinsic matrix is typically defined as:
 
-   $$
-    I = 
+   $$I = 
     \begin{bmatrix}
     f_x & 0 & c_x \\
     0 & f_y & c_y \\
     0 & 0 & 1
-    \end{bmatrix}
-   $$
+    \end{bmatrix}$$
 
     Where:
     - $f_x$ and $f_y$ are the focal lengths in the x and y directions, respectively.
