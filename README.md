@@ -182,7 +182,7 @@ Where:
 
   - $\mathbf{H}$ is the half-vector:  
     $\mathbf{H} = \frac{\mathbf{L} + \mathbf{V}}{|\mathbf{L} + \mathbf{V}|}$
-  - $\mathbf{L}$ is the light direction and$\mathbf{V}$is the view direction.
+  - $\mathbf{L}$ is the light direction and $\mathbf{V}$ is the view direction.
   - $n$ is the shininess exponent.
 
 This combination of ambient, diffuse, and specular illumination produces realistic lighting effects, simulating how light interacts with surfaces to create depth and highlight details in 3D rendering.
