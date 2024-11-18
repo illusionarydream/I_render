@@ -165,7 +165,7 @@ Diffuse illumination is the light that hits a surface and is scattered in all di
 
 ![](/README_image/phong.png)
 
-The final illumination$I$for a point on a surface is the sum of these three components:
+The final illumination $I$  for a point on a surface is the sum of these three components:
 <p align="center"><img src="svgs/4b8977ae10ffbffb1f56705b91a0c18b.svg?invert_in_darkmode" align=middle width=240.27685274999996pt height=15.936036599999998pt/></p>
 
 Where:
@@ -177,10 +177,12 @@ Where:
 
 - **Specular illumination** is calculated as:  
   <p align="center"><img src="svgs/419542866f8a554e7368603a2d93c6d5.svg?invert_in_darkmode" align=middle width=322.12839614999996pt height=17.9223891pt/></p>  
+
   Where:
+
   - $\mathbf{H}$ is the half-vector:  
-   $$\mathbf{H} = \frac{\mathbf{L} + \mathbf{V}}{|\mathbf{L} + \mathbf{V}|}$$ 
-   $\mathbf{L}$ is the light direction and$\mathbf{V}$is the view direction.
+    $\mathbf{H} = \frac{\mathbf{L} + \mathbf{V}}{|\mathbf{L} + \mathbf{V}|}$
+  - $\mathbf{L}$ is the light direction and$\mathbf{V}$is the view direction.
   - $n$ is the shininess exponent.
 
 This combination of ambient, diffuse, and specular illumination produces realistic lighting effects, simulating how light interacts with surfaces to create depth and highlight details in 3D rendering.
@@ -253,9 +255,9 @@ In the ray generation step, the inputs are the camera's intrinsic and extrinsic 
 
    The camera's intrinsic and extrinsic parameters are used to transform from camera coordinates to world coordinates. The equation for this transformation is:
 
-   \[
+   $$
    \mathbf{r}_{world} = \mathbf{R} \cdot \mathbf{r}_{camera} + \mathbf{t}
-   \]
+   $$
 
    Where:
    - $\mathbf{r}_{world}$ is the ray in world coordinates.
@@ -267,9 +269,9 @@ In the ray generation step, the inputs are the camera's intrinsic and extrinsic 
 
    For a given pixel at coordinates $(x, y)$ on the camera plane, we calculate the ray direction in the camera space. This can be done by projecting the pixel’s position in 3D space, taking into account the field of view (focal length) and the aspect ratio:
 
-   \[
+   $$
    \mathbf{r}_{camera} = \left( \frac{(x - \text{width}/2)}{f_x}, \frac{(y - \text{height}/2)}{f_y}, -1 \right)
-   \]
+   $$
 
    Where:
    - $(x, y)$ are the pixel coordinates on the camera plane.
@@ -280,17 +282,17 @@ In the ray generation step, the inputs are the camera's intrinsic and extrinsic 
 
    After computing the ray direction in camera coordinates, we transform it to world coordinates using the camera's extrinsic parameters:
 
-   \[
+   $$
    \mathbf{r}_{world} = \mathbf{R} \cdot \mathbf{r}_{camera} + \mathbf{t}
-   \]
+   $$
 
 #### Final Ray Equation
 
    The ray can now be represented as:
 
-   \[
+   $$
    \mathbf{R}(t) = \mathbf{O} + t \cdot \mathbf{r}_{world}
-   \]
+   $$
 
    Where:
    - $\mathbf{R}(t)$ is the ray in world coordinates at time $t$ .
