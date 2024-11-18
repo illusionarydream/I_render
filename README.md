@@ -166,17 +166,17 @@ Diffuse illumination is the light that hits a surface and is scattered in all di
 ![](/README_image/phong.png)
 
 The final illumination \(I\) for a point on a surface is the sum of these three components:
-$$ I = I_{ambient} + I_{diffuse} + I_{specular} $$
+<p align="center"><img src="svgs/4b8977ae10ffbffb1f56705b91a0c18b.svg?invert_in_darkmode" align=middle width=240.27685274999996pt height=15.936036599999998pt/></p>
 
 Where:
 - **Ambient illumination** is calculated as:  
-  $$ I_{ambient} = k_{ambient} \cdot I_{light} $$
+  <p align="center"><img src="svgs/dd3c83c83c90f1d2b790c7ec06e0bd78.svg?invert_in_darkmode" align=middle width=183.91711139999998pt height=16.1187015pt/></p>
 
 - **Diffuse illumination** is calculated using Lambert's cosine law:  
-  $$ I_{diffuse} = k_{diffuse} \cdot I_{light} \cdot \max(\mathbf{N} \cdot \mathbf{L}, 0) $$
+  <p align="center"><img src="svgs/aaf3c7eccfc7eece3ad7265372c51191.svg?invert_in_darkmode" align=middle width=290.65436565pt height=17.031940199999998pt/></p>
 
 - **Specular illumination** is calculated as:  
-  $$ I_{specular} = k_{specular} \cdot I_{light} \cdot \left( \max(\mathbf{H} \cdot \mathbf{N}, 0) \right)^n $$  
+  <p align="center"><img src="svgs/419542866f8a554e7368603a2d93c6d5.svg?invert_in_darkmode" align=middle width=322.12839614999996pt height=17.9223891pt/></p>  
   Where:
   - \( \mathbf{H} \) is the half-vector:  
     $$ \mathbf{H} = \frac{\mathbf{L} + \mathbf{V}}{|\mathbf{L} + \mathbf{V}|} $$  
