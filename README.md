@@ -93,7 +93,7 @@ struct Vertice{
 As for transformation, I borrowed a method from computer vision that is more fundamental and straightforward compared to the MVP (Model-View-Projection) transformation. Each camera has its own **intrinsic matrix**, **extrinsic matrix**, and **projection matrix**:
 
 - **Intrinsic Matrix**:
-    The intrinsic matrix \( I_{3 \times 3} \) represents the camera's internal parameters, such as focal length and the aspect ratio of the x and y coordinates. It can be understood as the **viewport transformation**, which maps the coordinates from the camera's image plane to the screen space. The intrinsic matrix is typically defined as:
+    The intrinsic matrix $ I_{3 \times 3} $ represents the camera's internal parameters, such as focal length and the aspect ratio of the x and y coordinates. It can be understood as the **viewport transformation**, which maps the coordinates from the camera's image plane to the screen space. The intrinsic matrix is typically defined as:
 
     $$
     I = 
@@ -105,11 +105,11 @@ As for transformation, I borrowed a method from computer vision that is more fun
     $$
 
     Where:
-    - \( f_x \) and \( f_y \) are the focal lengths in the x and y directions, respectively.
-    - \( c_x \) and \( c_y \) are the coordinates of the optical center (principal point) in the image plane.
+    - $ f_x $ and $ f_y $ are the focal lengths in the x and y directions, respectively.
+    - $ c_x $ and $ c_y $ are the coordinates of the optical center (principal point) in the image plane.
 
 - **Extrinsic Matrix**:
-    The extrinsic matrix \( E_{4 \times 4} \) describes the camera's position and orientation in the world space. It transforms points from world space to view space by applying the translation and rotation of the camera. The extrinsic matrix can be written as:
+    The extrinsic matrix $ E_{4 \times 4} $ describes the camera's position and orientation in the world space. It transforms points from world space to view space by applying the translation and rotation of the camera. The extrinsic matrix can be written as:
 
     $$
     E = 
@@ -120,11 +120,11 @@ As for transformation, I borrowed a method from computer vision that is more fun
     $$
 
     Where:
-    - \( R \) is the 3x3 rotation matrix that represents the camera's orientation (how the camera is rotated in space).
-    - \( t \) is the 3x1 translation vector representing the camera's position in world space.
+    - $ R $ is the 3x3 rotation matrix that represents the camera's orientation (how the camera is rotated in space).
+    - $ t $ is the 3x1 translation vector representing the camera's position in world space.
 
 - **Projection Matrix**:
-    The projection matrix \( P_{3 \times 4} \) transforms points from view space to screen space, accounting for the perspective projection and creating the effect of depth in the 3D scene. For a simple perspective projection, the projection matrix is given by:
+    The projection matrix $ P_{3 \times 4} $ transforms points from view space to screen space, accounting for the perspective projection and creating the effect of depth in the 3D scene. For a simple perspective projection, the projection matrix is given by:
 
     $$
     P = 
@@ -135,13 +135,13 @@ As for transformation, I borrowed a method from computer vision that is more fun
     \end{bmatrix}
     $$
 
-    Where \( z \) is the depth of the point being projected.
+    Where $ z $ is the depth of the point being projected.
 
 - **Final Transformation**:
-    To transform a point \( \mathbf{X}_{world} \) in world space to screen space, you combine these three matrices. The process is as follows:
-    1. First, transform the point from world space to view space using the extrinsic matrix \( E \).
-    2. Then, apply the intrinsic matrix \( I \) to map from view space to camera space.
-    3. Finally, apply the projection matrix \( P \) to convert from camera space to screen space.
+    To transform a point $ \mathbf{X}_{world} $ in world space to screen space, you combine these three matrices. The process is as follows:
+    1. First, transform the point from world space to view space using the extrinsic matrix $ E $.
+    2. Then, apply the intrinsic matrix $ I $ to map from view space to camera space.
+    3. Finally, apply the projection matrix $ P $ to convert from camera space to screen space.
 
     The final transformation can be written as:
 
@@ -165,7 +165,7 @@ Diffuse illumination is the light that hits a surface and is scattered in all di
 
 ![](/README_image/phong.png)
 
-The final illumination \(I\) for a point on a surface is the sum of these three components:
+The final illumination $I$ for a point on a surface is the sum of these three components:
 <p align="center"><img src="svgs/4b8977ae10ffbffb1f56705b91a0c18b.svg?invert_in_darkmode" align=middle width=240.27685274999996pt height=15.936036599999998pt/></p>
 
 Where:
@@ -178,10 +178,10 @@ Where:
 - **Specular illumination** is calculated as:  
   <p align="center"><img src="svgs/419542866f8a554e7368603a2d93c6d5.svg?invert_in_darkmode" align=middle width=322.12839614999996pt height=17.9223891pt/></p>  
   Where:
-  - \( \mathbf{H} \) is the half-vector:  
+  - $ \mathbf{H} $ is the half-vector:  
     $$ \mathbf{H} = \frac{\mathbf{L} + \mathbf{V}}{|\mathbf{L} + \mathbf{V}|} $$  
-    \( \mathbf{L} \) is the light direction and \( \mathbf{V} \) is the view direction.
-  - \( n \) is the shininess exponent.
+    $ \mathbf{L} $ is the light direction and $ \mathbf{V} $ is the view direction.
+  - $ n $ is the shininess exponent.
 
 This combination of ambient, diffuse, and specular illumination produces realistic lighting effects, simulating how light interacts with surfaces to create depth and highlight details in 3D rendering.
 
@@ -258,23 +258,23 @@ In the ray generation step, the inputs are the camera's intrinsic and extrinsic 
    \]
 
    Where:
-   - \(\mathbf{r}_{world}\) is the ray in world coordinates.
-   - \(\mathbf{R}\) is the rotation matrix from camera to world space.
-   - \(\mathbf{t}\) is the translation vector (camera position in world space).
-   - \(\mathbf{r}_{camera}\) is the ray in camera coordinates (a vector in the camera plane).
+   - $\mathbf{r}_{world}$ is the ray in world coordinates.
+   - $\mathbf{R}$ is the rotation matrix from camera to world space.
+   - $\mathbf{t}$ is the translation vector (camera position in world space).
+   - $\mathbf{r}_{camera}$ is the ray in camera coordinates (a vector in the camera plane).
 
 #### Ray Equation for a Given Pixel
 
-   For a given pixel at coordinates \((x, y)\) on the camera plane, we calculate the ray direction in the camera space. This can be done by projecting the pixel’s position in 3D space, taking into account the field of view (focal length) and the aspect ratio:
+   For a given pixel at coordinates $(x, y)$ on the camera plane, we calculate the ray direction in the camera space. This can be done by projecting the pixel’s position in 3D space, taking into account the field of view (focal length) and the aspect ratio:
 
    \[
    \mathbf{r}_{camera} = \left( \frac{(x - \text{width}/2)}{f_x}, \frac{(y - \text{height}/2)}{f_y}, -1 \right)
    \]
 
    Where:
-   - \((x, y)\) are the pixel coordinates on the camera plane.
-   - \(\text{width}, \text{height}\) are the resolution of the image.
-   - \(f_x, f_y\) are the focal lengths in the x and y directions (derived from the camera intrinsic matrix).
+   - $(x, y)$ are the pixel coordinates on the camera plane.
+   - $\text{width}, \text{height}$ are the resolution of the image.
+   - $f_x, f_y$ are the focal lengths in the x and y directions (derived from the camera intrinsic matrix).
 
 #### Ray Generation in World Coordinates
 
@@ -293,9 +293,9 @@ In the ray generation step, the inputs are the camera's intrinsic and extrinsic 
    \]
 
    Where:
-   - \(\mathbf{R}(t)\) is the ray in world coordinates at time \(t\).
-   - \(\mathbf{O}\) is the origin of the camera (the camera position).
-   - \(t\) is the parameter that determines the ray's position along its direction.
+   - $\mathbf{R}(t)$ is the ray in world coordinates at time $t$.
+   - $\mathbf{O}$ is the origin of the camera (the camera position).
+   - $t$ is the parameter that determines the ray's position along its direction.
 
 This process computes the direction and origin of each ray generated from each pixel on the camera plane, allowing us to trace rays into the scene.
 
@@ -305,32 +305,32 @@ For the collision calculation, since the focus of the I_render engine is not on 
 
 #### Möller-Trumbore Intersection Algorithm
 
-The Möller-Trumbore algorithm efficiently calculates the intersection of a ray and a triangle. Given a ray \( \mathbf{R}(t) = \mathbf{O} + t \cdot \mathbf{d} \) and a triangle with vertices \( \mathbf{v}_0, \mathbf{v}_1, \mathbf{v}_2 \), the algorithm computes if and where the ray intersects the triangle.
+The Möller-Trumbore algorithm efficiently calculates the intersection of a ray and a triangle. Given a ray $ \mathbf{R}(t) = \mathbf{O} + t \cdot \mathbf{d} $ and a triangle with vertices $ \mathbf{v}_0, \mathbf{v}_1, \mathbf{v}_2 $, the algorithm computes if and where the ray intersects the triangle.
 
 - Compute edge vectors:  
-   \( \mathbf{e}_1 = \mathbf{v}_1 - \mathbf{v}_0 \), \( \mathbf{e}_2 = \mathbf{v}_2 - \mathbf{v}_0 \)
+   $ \mathbf{e}_1 = \mathbf{v}_1 - \mathbf{v}_0 $, $ \mathbf{e}_2 = \mathbf{v}_2 - \mathbf{v}_0 $
 
 - Compute the cross product of the ray direction and edge vector:  
-   \( \mathbf{h} = \mathbf{d} \times \mathbf{e}_2 \)
+   $ \mathbf{h} = \mathbf{d} \times \mathbf{e}_2 $
 
 - Compute the determinant:  
-   \( a = \mathbf{e}_1 \cdot \mathbf{h} \)
+   $ a = \mathbf{e}_1 \cdot \mathbf{h} $
 
-- If \( |a| \) is small, the ray is parallel to the triangle, and there is no intersection.
+- If $ |a| $ is small, the ray is parallel to the triangle, and there is no intersection.
 
 - Compute the intersection parameters:  
-   \( \mathbf{s} = \mathbf{O} - \mathbf{v}_0 \),  
-   \( u = \frac{\mathbf{s} \cdot \mathbf{h}}{a} \)  
-   If \( u < 0 \) or \( u > 1 \), the intersection is outside the triangle.
+   $ \mathbf{s} = \mathbf{O} - \mathbf{v}_0 $,  
+   $ u = \frac{\mathbf{s} \cdot \mathbf{h}}{a} $  
+   If $ u < 0 $ or $ u > 1 $, the intersection is outside the triangle.
 
 - Compute the second parameter:  
-   \( \mathbf{q} = \mathbf{s} \times \mathbf{e}_1 \),  
-   \( v = \frac{\mathbf{d} \cdot \mathbf{q}}{a} \)  
-   If \( v < 0 \) or \( u + v > 1 \), the intersection is outside the triangle.
+   $ \mathbf{q} = \mathbf{s} \times \mathbf{e}_1 $,  
+   $ v = \frac{\mathbf{d} \cdot \mathbf{q}}{a} $  
+   If $ v < 0 $ or $ u + v > 1 $, the intersection is outside the triangle.
 
 - Compute the intersection point:  
-   \( t = \frac{\mathbf{e}_2 \cdot \mathbf{q}}{a} \)  
-   If \( t > 0 \), the ray intersects the triangle at \( \mathbf{O} + t \cdot \mathbf{d} \).
+   $ t = \frac{\mathbf{e}_2 \cdot \mathbf{q}}{a} $  
+   If $ t > 0 $, the ray intersects the triangle at $ \mathbf{O} + t \cdot \mathbf{d} $.
 
 #### BVH structure
 To accelerate the computation of ray-triangle intersections, I have reorganized and structured all the triangles using a **Bounding Volume Hierarchy** (BVH). 
@@ -406,29 +406,29 @@ In the ray tracing engine, the color calculation is based on classic radiometry 
    \]
 
    Where:
-   - \( L_o(p, \omega_o) \) is the outgoing radiance at point \( p \) in direction \( \omega_o \).
-   - \( L_e(p, \omega_o) \) is the emitted radiance from the point (for light sources).
-   - \( f_r(p, \omega_i, \omega_o) \) is the bidirectional reflectance distribution function (BRDF), describing how light reflects at the surface.
-   - \( L_i(p, \omega_i) \) is the incoming radiance from direction \( \omega_i \).
-   - \( \mathbf{n} \cdot \omega_i \) accounts for the angle between the incoming light and the surface normal \( \mathbf{n} \), ensuring accurate brightness based on surface orientation.
+   - $ L_o(p, \omega_o) $ is the outgoing radiance at point $ p $ in direction $ \omega_o $.
+   - $ L_e(p, \omega_o) $ is the emitted radiance from the point (for light sources).
+   - $ f_r(p, \omega_i, \omega_o) $ is the bidirectional reflectance distribution function (BRDF), describing how light reflects at the surface.
+   - $ L_i(p, \omega_i) $ is the incoming radiance from direction $ \omega_i $.
+   - $ \mathbf{n} \cdot \omega_i $ accounts for the angle between the incoming light and the surface normal $ \mathbf{n} $, ensuring accurate brightness based on surface orientation.
 
 - **Indirect Illumination**
    Indirect illumination considers light that bounces off other surfaces before reaching the point of interest. This includes diffuse interreflections and glossy reflections, which add realism to the scene by capturing complex light paths. Indirect illumination can be calculated through recursive ray tracing, where secondary rays are spawned from the intersection point to sample light from other surfaces.
 
 - **Reflection and Refraction**
-   For reflective and transparent surfaces, reflection and refraction rays are traced to capture light bouncing off or passing through surfaces. The reflection direction \( \omega_r \) is calculated using:
+   For reflective and transparent surfaces, reflection and refraction rays are traced to capture light bouncing off or passing through surfaces. The reflection direction $ \omega_r $ is calculated using:
 
    \[
    \omega_r = \omega_o - 2(\omega_o \cdot \mathbf{n}) \mathbf{n}
    \]
 
-   Refraction is calculated based on Snell's Law, considering the indices of refraction of the two media. This results in a transmission direction \( \omega_t \) determined by:
+   Refraction is calculated based on Snell's Law, considering the indices of refraction of the two media. This results in a transmission direction $ \omega_t $ determined by:
 
    \[
    \eta_i \sin \theta_i = \eta_t \sin \theta_t
    \]
 
-   where \( \eta_i \) and \( \eta_t \) are the indices of refraction of the incident and transmitted media, respectively.
+   where $ \eta_i $ and $ \eta_t $ are the indices of refraction of the incident and transmitted media, respectively.
 
 - **Final Color Computation (Recursive Ray Tracing)**
    The total color at each pixel is computed by combining the radiance from direct and indirect illumination, reflection, and refraction. For each ray, we recursively trace secondary rays based on material properties until reaching a termination condition (e.g., a maximum recursion depth or negligible radiance contribution). The final color is an accumulation of these radiance contributions weighted by the surface’s BRDF, Fresnel effects, and material absorption factors.
@@ -444,10 +444,10 @@ In the scattering module, the main consideration is the direction in which a ray
 #### Key Elements of Scattering Calculation
 
 - **BRDF and Scattering Direction**
-   The BRDF, \( f_r(p, \omega_i, \omega_o) \), is a function that represents how light is reflected at an opaque surface. It is defined as the ratio of reflected radiance leaving the surface in direction \( \omega_o \) to the incoming irradiance arriving from direction \( \omega_i \). The BRDF controls the scattering direction after a ray intersects with a surface, describing both diffuse and specular reflection components.
+   The BRDF, $ f_r(p, \omega_i, \omega_o) $, is a function that represents how light is reflected at an opaque surface. It is defined as the ratio of reflected radiance leaving the surface in direction $ \omega_o $ to the incoming irradiance arriving from direction $ \omega_i $. The BRDF controls the scattering direction after a ray intersects with a surface, describing both diffuse and specular reflection components.
 
 - **Probability Density Function (PDF)**
-   Since the BRDF defines how light is likely to scatter, it can be interpreted as a probability density function (PDF) over outgoing directions for a fixed incoming direction. When a ray hits a surface, the probability of scattering in a particular direction \( \omega_o \) is proportional to the value of the BRDF for that direction. This probabilistic approach is key to sampling directions in path tracing, where each outgoing direction is chosen based on this PDF.
+   Since the BRDF defines how light is likely to scatter, it can be interpreted as a probability density function (PDF) over outgoing directions for a fixed incoming direction. When a ray hits a surface, the probability of scattering in a particular direction $ \omega_o $ is proportional to the value of the BRDF for that direction. This probabilistic approach is key to sampling directions in path tracing, where each outgoing direction is chosen based on this PDF.
 
 - **Sampling the Scattering Direction**
    To determine the direction of the scattered ray, we sample according to the BRDF's PDF:
