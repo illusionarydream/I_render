@@ -95,14 +95,7 @@ As for transformation, I borrowed a method from computer vision that is more fun
 - **Intrinsic Matrix**:
     The intrinsic matrix $I_{3 \times3}$ represents the camera's internal parameters, such as focal length and the aspect ratio of the x and y coordinates. It can be understood as the **viewport transformation**, which maps the coordinates from the camera's image plane to the screen space. The intrinsic matrix is typically defined as:
 
-   $$
-    I = 
-    \begin{bmatrix}
-    f_x & 0 & c_x \\
-    0 & f_y & c_y \\
-    0 & 0 & 1
-    \end{bmatrix}
-   $$
+   <p align="center"><img src="svgs/equation1.svg" align=middle width=600.27685274999996pt height=60.936036599999998pt/></p>
 
     Where:
     - $f_x$ and $f_y$ are the focal lengths in the x and y directions, respectively.
@@ -111,13 +104,7 @@ As for transformation, I borrowed a method from computer vision that is more fun
 - **Extrinsic Matrix**:
     The extrinsic matrix $E_{4 \times 4}$ describes the camera's position and orientation in the world space. It transforms points from world space to view space by applying the translation and rotation of the camera. The extrinsic matrix can be written as:
 
-   $$
-    E = 
-    \begin{bmatrix}
-    R & t \\
-    0 & 1
-    \end{bmatrix}
-   $$
+   <p align="center"><img src="svgs/equation(2).svg" align=middle width=500pt height=50pt/></p>
 
     Where:
     - $R$ is the 3x3 rotation matrix that represents the camera's orientation (how the camera is rotated in space).
@@ -126,16 +113,9 @@ As for transformation, I borrowed a method from computer vision that is more fun
 - **Projection Matrix**:
     The projection matrix $P_{3 \times 4}$ transforms points from view space to screen space, accounting for the perspective projection and creating the effect of depth in the 3D scene. For a simple perspective projection, the projection matrix is given by:
 
-   $$
-    P = 
-    \begin{bmatrix}
-    \frac{1}{z} & 0 & 0 & 0 \\
-    0 & \frac{1}{z} & 0 & 0 \\
-    0 & 0 & \frac{1}{z} & 0
-    \end{bmatrix}
-   $$
+    <p align="center"><img src="svgs/equation(4).svg" align=middle width=800pt height=80pt/></p>
 
-    Where$z$is the depth of the point being projected.
+    Where $z$ is the depth of the point being projected.
 
 - **Final Transformation**:
     To transform a point $\mathbf{X}_{world}$ in world space to screen space, you combine these three matrices. The process is as follows:
@@ -145,7 +125,7 @@ As for transformation, I borrowed a method from computer vision that is more fun
 
     The final transformation can be written as:
 
-   $$\mathbf{X}_{screen} = P \cdot I \cdot E \cdot \mathbf{X}_{world}$$
+    <p align="center"><img src="svgs/equation(3).svg" align=middle width=200pt height=30pt/></p>
 
     This combination of intrinsic, extrinsic, and projection matrices defines the complete transformation pipeline from world space to screen space in computer vision and 3D rendering.
 
@@ -253,9 +233,7 @@ In the ray generation step, the inputs are the camera's intrinsic and extrinsic 
 
    The camera's intrinsic and extrinsic parameters are used to transform from camera coordinates to world coordinates. The equation for this transformation is:
 
-   $$
-   \mathbf{r}_{world} = \mathbf{R} \cdot \mathbf{r}_{camera} + \mathbf{t}
-   $$
+   <p align="center"><img src="svgs/equation(5).svg" align=middle width=322.12839614999996pt height=17.9223891pt/></p>  
 
    Where:
    - $\mathbf{r}_{world}$ is the ray in world coordinates.
@@ -267,9 +245,7 @@ In the ray generation step, the inputs are the camera's intrinsic and extrinsic 
 
    For a given pixel at coordinates $(x, y)$ on the camera plane, we calculate the ray direction in the camera space. This can be done by projecting the pixel’s position in 3D space, taking into account the field of view (focal length) and the aspect ratio:
 
-   $$
-   \mathbf{r}_{camera} = \left( \frac{(x - \text{width}/2)}{f_x}, \frac{(y - \text{height}/2)}{f_y}, -1 \right)
-   $$
+   <p align="center"><img src="svgs/equation(6).svg" align=middle width=622.12839614999996pt height=47.9223891pt/></p>  
 
    Where:
    - $(x, y)$ are the pixel coordinates on the camera plane.
@@ -280,17 +256,13 @@ In the ray generation step, the inputs are the camera's intrinsic and extrinsic 
 
    After computing the ray direction in camera coordinates, we transform it to world coordinates using the camera's extrinsic parameters:
 
-   $$
-   \mathbf{r}_{world} = \mathbf{R} \cdot \mathbf{r}_{camera} + \mathbf{t}
-   $$
+   <p align="center"><img src="svgs/equation(5).svg" align=middle width=322.12839614999996pt height=17.9223891pt/></p>  
 
 #### Final Ray Equation
 
    The ray can now be represented as:
 
-   $$
-   \mathbf{R}(t) = \mathbf{O} + t \cdot \mathbf{r}_{world}
-   $$
+   <p align="center"><img src="svgs/equation(8).svg" align=middle width=322.12839614999996pt height=17.9223891pt/></p>  
 
    Where:
    - $\mathbf{R}(t)$ is the ray in world coordinates at time $t$ .
@@ -401,9 +373,7 @@ In the ray tracing engine, the color calculation is based on classic radiometry 
 - **Direct Illumination**
    Direct illumination accounts for light that travels directly from light sources to surfaces. For each surface point hit by a ray, we calculate the radiance contribution from each light source that is not blocked by an object (shadow test). The direct illumination is calculated using the rendering equation:
 
-   $$
-   L_o(p, \omega_o) = L_e(p, \omega_o) + \int_\Omega f_r(p, \omega_i, \omega_o) L_i(p, \omega_i) (\mathbf{n} \cdot \omega_i) \, d\omega_i
-   $$
+   <p align="center"><img src="svgs/equation(9).svg" align=middle width=622.12839614999996pt height=40.9223891pt/></p>  
 
    Where:
    - $L_o(p, \omega_o)$ is the outgoing radiance at point $p$ in direction $\omega_o$ .
@@ -418,15 +388,11 @@ In the ray tracing engine, the color calculation is based on classic radiometry 
 - **Reflection and Refraction**
    For reflective and transparent surfaces, reflection and refraction rays are traced to capture light bouncing off or passing through surfaces. The reflection direction $\omega_r$ is calculated using:
 
-   $$
-   \omega_r = \omega_o - 2(\omega_o \cdot \mathbf{n}) \mathbf{n}
-   $$
+   <p align="center"><img src="svgs/equation(10).svg" align=middle width=222.12839614999996pt height=20.9223891pt/></p>  
 
    Refraction is calculated based on Snell's Law, considering the indices of refraction of the two media. This results in a transmission direction $\omega_t$ determined by:
 
-   $$
-   \eta_i \sin \theta_i = \eta_t \sin \theta_t
-   $$
+   <p align="center"><img src="svgs/equation(11).svg" align=middle width=202.12839614999996pt height=20.9223891pt/></p>  
 
    where $\eta_i$ and $\eta_t$ are the indices of refraction of the incident and transmitted media, respectively.
 
