@@ -1,5 +1,7 @@
 #include "dataload.cuh"
 
+// ! temporarily only support triangles.
+// ! need to have normals.
 std::vector<Triangle> load_obj(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -51,13 +53,25 @@ std::vector<Triangle> load_obj(const std::string& filename) {
 
     for (int i = 0; i < indices_vertices.size(); i += 3) {
         // get the vertices
-        V3f v0(vertices[3 * indices_vertices[i]], vertices[3 * indices_vertices[i] + 1], vertices[3 * indices_vertices[i] + 2]);
-        V3f v1(vertices[3 * indices_vertices[i + 1]], vertices[3 * indices_vertices[i + 1] + 1], vertices[3 * indices_vertices[i + 1] + 2]);
-        V3f v2(vertices[3 * indices_vertices[i + 2]], vertices[3 * indices_vertices[i + 2] + 1], vertices[3 * indices_vertices[i + 2] + 2]);
+        V3f v0(vertices[3 * indices_vertices[i]],
+               vertices[3 * indices_vertices[i] + 1],
+               vertices[3 * indices_vertices[i] + 2]);
+        V3f v1(vertices[3 * indices_vertices[i + 1]],
+               vertices[3 * indices_vertices[i + 1] + 1],
+               vertices[3 * indices_vertices[i + 1] + 2]);
+        V3f v2(vertices[3 * indices_vertices[i + 2]],
+               vertices[3 * indices_vertices[i + 2] + 1],
+               vertices[3 * indices_vertices[i + 2] + 2]);
         // get the normals
-        V3f n0(normals[3 * indices_normals[i]], normals[3 * indices_normals[i] + 1], normals[3 * indices_normals[i] + 2]);
-        V3f n1(normals[3 * indices_normals[i + 1]], normals[3 * indices_normals[i + 1] + 1], normals[3 * indices_normals[i + 1] + 2]);
-        V3f n2(normals[3 * indices_normals[i + 2]], normals[3 * indices_normals[i + 2] + 1], normals[3 * indices_normals[i + 2] + 2]);
+        V3f n0(normals[3 * indices_normals[i]],
+               normals[3 * indices_normals[i] + 1],
+               normals[3 * indices_normals[i] + 2]);
+        V3f n1(normals[3 * indices_normals[i + 1]],
+               normals[3 * indices_normals[i + 1] + 1],
+               normals[3 * indices_normals[i + 1] + 2]);
+        V3f n2(normals[3 * indices_normals[i + 2]],
+               normals[3 * indices_normals[i + 2] + 1],
+               normals[3 * indices_normals[i + 2] + 2]);
 
         triangles.push_back(Triangle(v0, v1, v2, n0, n1, n2));
     }

@@ -28,15 +28,28 @@ __global__ void generateRayKernel(const M4f *Inv_Extrinsic,
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
+    __shared__ M4f Inv_Extrinsic_shared;
+    __shared__ M3f Inv_Intrinsic_shared;
+    __shared__ V4f camera_pos_shared;
+
+    // * load the shared memory
+    if (threadIdx.x == 0 && threadIdx.y == 0) {
+        Inv_Extrinsic_shared = *Inv_Extrinsic;
+        Inv_Intrinsic_shared = *Inv_Intrinsic;
+        camera_pos_shared = *camera_pos;
+    }
+
+    __syncthreads();
+
     if (x < width && y < height) {
         // generate ray from camera to the pixel (x, y)
         V3f p_film((x + 0.5f) / width, (y + 0.5f) / height, 1.0f);
-        V3f p_camera3 = (*Inv_Intrinsic) * p_film;
+        V3f p_camera3 = Inv_Intrinsic_shared * p_film;
         auto p_camera = V4f(-p_camera3[0], -p_camera3[1], -1.0f, 1.0f);
-        V4f p_world = (*Inv_Extrinsic) * p_camera;
+        V4f p_world = Inv_Extrinsic_shared * p_camera;
 
         // set the origin and direction of the ray
-        rays[y * width + x].orig = *camera_pos;
+        rays[y * width + x].orig = camera_pos_shared;
         rays[y * width + x].dir = normalize(p_world - rays[y * width + x].orig);
     }
 }

@@ -143,7 +143,6 @@ class Material {
             float ni_over_nt;
             float cosine;
             float reflect_prob;
-            float reflectance;
 
             V4f reflected = reflect(wi.dir * -1.0f, normal);
             if (dot(wi.dir, normal) > 0.0f) {

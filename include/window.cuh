@@ -87,29 +87,20 @@ class Window {
             meshes.add_triangles(d_triangles, triangles.size());
 
             // * set the mesh material
-            Material material(3, V4f(1.0f, 1.0f, 1.0f, 1.0f), 1.1);
+            Material material(2, V4f(1.0f, 1.0f, 1.0f, 1.0f), 0.1);
             meshes.set_material(material);  // this step must be before add_triangles, because the added light will not have the material
 
             // * set the light
             Triangle light_tri(V3f(10.0f, 5.0f, 10.0f),
                                V3f(-10.0f, 5.0f, 0.0f),
                                V3f(10.0f, 5.0f, -10.0f));
-            Material light_material(0, V4f(1.0f, 1.2f, 1.0f, 1.0f));
+            Material light_material(0, V4f(1.5f, 0.2f, 0.0f, 1.0f));
             light_tri.set_material(light_material);
             meshes.add_triangle(light_tri);
 
             // * set the backplane
-            Triangle backplane_tri1(V3f(-10.0f, -0.5f, 10.0f),
-                                    V3f(10.0f, -0.5f, 10.0f),
-                                    V3f(10.0f, -0.5f, -10.0f));
-            Triangle backplane_tri2(V3f(-10.0f, -0.5f, 10.0f),
-                                    V3f(10.0f, -0.5f, -10.0f),
-                                    V3f(-10.0f, -0.5f, -10.0f));
-            Material backplane_material(1, V4f(0.5f, 0.5f, 0.7f, 1.0f));
-            backplane_tri1.set_material(backplane_material);
-            backplane_tri2.set_material(backplane_material);
-            meshes.add_triangle(backplane_tri1);
-            meshes.add_triangle(backplane_tri2);
+            Material backplane_material(1, V4f(1.0f, 1.0f, 1.0f, 1.0f));
+            meshes.add_ground(-1.5f, backplane_material);
 
             // * build BVH
             meshes.build_BVH();

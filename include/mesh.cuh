@@ -223,6 +223,19 @@ class Mesh {
         this->num_triangles += num_triangles;
     }
 
+    __host__ __device__ void add_ground(float y, const Material &mat) {
+        Triangle backplane_tri1(V3f(-10.0f, y, 10.0f),
+                                V3f(10.0f, y, 10.0f),
+                                V3f(10.0f, y, -10.0f));
+        Triangle backplane_tri2(V3f(-10.0f, y, 10.0f),
+                                V3f(10.0f, y, -10.0f),
+                                V3f(-10.0f, y, -10.0f));
+        backplane_tri1.set_material(mat);
+        backplane_tri2.set_material(mat);
+        add_triangle(backplane_tri1);
+        add_triangle(backplane_tri2);
+    }
+
     __host__ __device__ void add_light(const Light &light) {
         this->light[num_lights] = light;
         num_lights++;
