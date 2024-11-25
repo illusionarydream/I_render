@@ -35,6 +35,7 @@ class Window {
     Mesh meshes;
     static float radius;
     bool render_type;  // 0-rasterization, 1-ray tracing
+    static int sample_Max;
 
     // for mouse callback
     static float sensitivity;
@@ -117,6 +118,9 @@ class Window {
             camera.if_pathtracing = true;
             camera.setIntrinsics(2.0f, 2.0f, 0.5f, 0.5f, 0.0f);
             camera.setExtrinsics(V4f(0.0f, 0.0f, radius, 1.0f), V4f(0.0f, 0.0f, 0.0f, 1.0f), V4f(0.0f, -1.0f, 0.0f, 0.0f));  // initial position of the camera
+
+            // * set the camera sampling
+            camera.setSamplePerPixel(sample_Max - 200);
         }
     }
 
@@ -168,6 +172,11 @@ class Window {
 
         // set the camera extrinsics
         camera.setExtrinsics(camera_pos, camera_lookat, camera_up);
+
+        // * adapt the camera sampling by moving velocity
+        int move_velocity = xoffset * xoffset + yoffset * yoffset;
+        int samples_per_pixel = 20 + sample_Max / (1 + 10 * move_velocity);
+        camera.setSamplePerPixel(samples_per_pixel);
     }
 
     void renderLoop(GLFWwindow* window) {
@@ -181,10 +190,19 @@ class Window {
             camera.setGPUParameters_rasterize(meshes, width, height);
 
         while (!glfwWindowShouldClose(window)) {
+            // eliminate the flicker
+            if (camera.samples_per_pixel == sample_Max) {
+                glfwPollEvents();
+                continue;
+            }
+
             if (render_type == 1)
                 camera.render_raytrace(height, width, meshes, image);
             else
                 camera.render_rasterization(height, width, meshes, image);
+
+            // Gradually restores rendering quality
+            camera.samples_per_pixel = MIN(camera.samples_per_pixel + 50, sample_Max);
 
             glClear(GL_COLOR_BUFFER_BIT);
             glDrawPixels(width, height, GL_RGB, GL_FLOAT, image.data());
@@ -232,5 +250,6 @@ class Window {
 Camera Window::camera;
 float Window::sensitivity = 0.2f;
 float Window::radius = 8.0f;
+int Window::sample_Max = 350;
 
 #endif  // WINDOW_HPP

@@ -75,6 +75,10 @@ class Camera {
     ~Camera() {}
 
     // * member functions
+    void setSamplePerPixel(const int samples_per_pixel) {
+        this->samples_per_pixel = samples_per_pixel;
+    }
+
     void setIntrinsics(float f_sx = 1.0f, float f_sy = 1.0f, float c_x = 1.0f, float c_y = 1.0f, float s = 0.0f) {
         // * from camera coordinate system to image coordinate system
         // f_sx: focal length in x direction
