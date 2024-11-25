@@ -503,3 +503,8 @@ In this chapter, I will showcase the results achieved by `I_render`.
 
 #### Real-time Raytrace: refract
 ![](README_image/Peek-2024-11-12-22-11.gif)
+
+#### Real-time Raytrace: Better optimization
+![](README_image/Peek-2024-11-25-13-55.gif)
+![](README_image/Peek-2024-11-25-14-47.gif)
+
