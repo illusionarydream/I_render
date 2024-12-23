@@ -144,61 +144,71 @@ __global__ void transformTrianglesAndLights(
         V3f v1 = (*Intrinsics) * shared_triangles_vertices[idx_block][0];
         V3f v2 = (*Intrinsics) * shared_triangles_vertices[idx_block][1];
         V3f v3 = (*Intrinsics) * shared_triangles_vertices[idx_block][2];
-        v1 = (v1 / v1[2]) * width - V3f(0.5f, 0.5f, 0.0f);
-        v2 = (v2 / v2[2]) * width - V3f(0.5f, 0.5f, 0.0f);
-        v3 = (v3 / v3[2]) * width - V3f(0.5f, 0.5f, 0.0f);
 
         // depth
-        float depth1 = shared_triangles_vertices[idx_block][0][2];
-        float depth2 = shared_triangles_vertices[idx_block][1][2];
-        float depth3 = shared_triangles_vertices[idx_block][2][2];
+        float depth1 = v1[2];
+        float depth2 = v2[2];
+        float depth3 = v3[2];
 
-        // bounding box
-        int x_min = roundf(fmin(fmin(v1[0], v2[0]), v3[0]));
-        int x_max = roundf(fmax(fmax(v1[0], v2[0]), v3[0]));
-        int y_min = roundf(fmin(fmin(v1[1], v2[1]), v3[1]));
-        int y_max = roundf(fmax(fmax(v1[1], v2[1]), v3[1]));
+        if ((depth1 > MIN_surface || depth1 < -MIN_surface) && (depth2 > MIN_surface || depth2 < -MIN_surface) && (depth3 > MIN_surface || depth3 < -MIN_surface)) {
+            // compute the space position
+            v1 = (v1 / v1[2]) * width - V3f(0.5f, 0.5f, 0.0f);
+            v2 = (v2 / v2[2]) * width - V3f(0.5f, 0.5f, 0.0f);
+            v3 = (v3 / v3[2]) * width - V3f(0.5f, 0.5f, 0.0f);
 
-        for (int x = x_min; x <= x_max; x++) {
-            for (int y = y_min; y <= y_max; y++) {
-                if (x < 0 || x >= width || y < 0 || y >= height) {
-                    continue;
+            // bounding box
+            int x_min = roundf(fmin(fmin(v1[0], v2[0]), v3[0]));
+            int x_max = roundf(fmax(fmax(v1[0], v2[0]), v3[0]));
+            int y_min = roundf(fmin(fmin(v1[1], v2[1]), v3[1]));
+            int y_max = roundf(fmax(fmax(v1[1], v2[1]), v3[1]));
+
+            // bounding in the viewplane
+            x_min = max(0, x_min);
+            x_max = min(width - 1, x_max);
+            y_min = max(0, y_min);
+            y_max = min(height - 1, y_max);
+
+            for (int x = x_min; x <= x_max; x++) {
+                for (int y = y_min; y <= y_max; y++) {
+                    if (x < 0 || x >= width || y < 0 || y >= height) {
+                        continue;
+                    }
+
+                    // * check if the point is in the triangle
+
+                    // barcentric coordinates
+                    float u, v, w;
+                    bool if_in_triangle = barycentric(float(x), float(y),
+                                                      v1[0], v1[1], v2[0], v2[1], v3[0], v3[1],
+                                                      u, v, w);
+
+                    // the point is outside the triangle
+                    if (!if_in_triangle) {
+                        continue;
+                    }
+
+                    // interpolate the depth
+                    float depth = -(u * depth1 + v * depth2 + w * depth3);
+                    if (depth < MIN_surface) {
+                        continue;
+                    }
+
+                    // update the depth buffer
+                    int depth_idx = y * width + x;
+
+                    // other information for shading: view space normal and position
+                    V3f tmp_normal = shared_triangles_normals[idx_block][0] * u +
+                                     shared_triangles_normals[idx_block][1] * v +
+                                     shared_triangles_normals[idx_block][2] * w;
+                    V3f tmp_position = shared_triangles_vertices[idx_block][0] * u +
+                                       shared_triangles_vertices[idx_block][1] * v +
+                                       shared_triangles_vertices[idx_block][2] * w;
+
+                    float3 normal = make_float3(tmp_normal[0], tmp_normal[1], tmp_normal[2]);
+                    float3 position = make_float3(tmp_position[0], tmp_position[1], tmp_position[2]);
+
+                    atomicUpdateStruct(&depth_buffer[depth_idx], {depth, normal, position, 0});
                 }
-
-                // * check if the point is in the triangle
-
-                // barcentric coordinates
-                float u, v, w;
-                bool if_in_triangle = barycentric(float(x), float(y),
-                                                  v1[0], v1[1], v2[0], v2[1], v3[0], v3[1],
-                                                  u, v, w);
-
-                // the point is outside the triangle
-                if (!if_in_triangle) {
-                    continue;
-                }
-
-                // interpolate the depth
-                float depth = -(u * depth1 + v * depth2 + w * depth3);
-                if (depth < 0) {
-                    continue;
-                }
-
-                // update the depth buffer
-                int depth_idx = y * width + x;
-
-                // other information for shading: view space normal and position
-                V3f tmp_normal = shared_triangles_normals[idx_block][0] * u +
-                                 shared_triangles_normals[idx_block][1] * v +
-                                 shared_triangles_normals[idx_block][2] * w;
-                V3f tmp_position = shared_triangles_vertices[idx_block][0] * u +
-                                   shared_triangles_vertices[idx_block][1] * v +
-                                   shared_triangles_vertices[idx_block][2] * w;
-
-                float3 normal = make_float3(tmp_normal[0], tmp_normal[1], tmp_normal[2]);
-                float3 position = make_float3(tmp_position[0], tmp_position[1], tmp_position[2]);
-
-                atomicUpdateStruct(&depth_buffer[depth_idx], {depth, normal, position, 0});
             }
         }
     }

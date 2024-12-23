@@ -66,6 +66,10 @@ class Window {
             Material material(1, V4f(1.0f, 1.0f, 1.0f, 1.0f));
             meshes.set_material(material);  // this step must be before add_triangles, because the added light will not have the material
 
+            // * set the backplane
+            Material backplane_material(1, V4f(1.0f, 1.0f, 1.0f, 1.0f));
+            meshes.add_ground(-1.5f, backplane_material);
+
             // * set the light
             Light l1 = Light(V4f(15.0f, 15.0f, 15.0f, 1.0f), V4f(0.0f, 5.0f, 0.0f, 1.0f), 1.0f);
             meshes.add_light(l1);
@@ -240,7 +244,7 @@ class Window {
 // * static members initialization
 Camera Window::camera;
 float Window::sensitivity = 0.2f;
-float Window::radius = 8.0f;
+float Window::radius = 10.0f;
 int Window::sample_Max = 350;
 
 #endif  // WINDOW_HPP

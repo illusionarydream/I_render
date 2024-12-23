@@ -71,6 +71,7 @@ In my opinion, each rendering engine has several important parts. Even though di
 - Transformation from world coordinates to the camera plane
 - Lighting and shading of the model
   
+
 The keywords are: **geometry, transformation, shading**. As for `I_render`, I addressed these three issues separately and combined them with CUDA parallelization, achieving good results.
 
 ### Implementation: geometric representation
@@ -173,6 +174,7 @@ In `I_render`, our pipeline can be roughly divided into the following steps:
 - The second step is to project the triangular mesh onto a plane based on depth, obtaining the spatial point and its related information for each pixel.
 - The third step is to perform shading for each spatial point corresponding to the pixel.
   
+
 I will seperately introduce these three steps.
 
 ![](/README_image/Untitled%20Diagram.drawio.png)
@@ -467,7 +469,7 @@ In `I_render`, ray tracing is implemented with pixel-level parallelism, where ea
            
        # Increment bounce count
        bounces += 1
-  ```
+   ```
 - **Apply Russian Roulette for Early Termination**
 
     For optimization, apply Russian Roulette to probabilistically terminate paths with low contribution to reduce the number of calculations in deep bounces, while preserving energy conservation.

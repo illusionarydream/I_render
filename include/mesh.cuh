@@ -213,7 +213,7 @@ class Mesh {
 
     __host__ __device__ void add_triangle(const Triangle &triangle) {
         triangles[num_triangles] = triangle;
-        num_triangles++;
+        this->num_triangles++;
     }
 
     __host__ __device__ void add_triangles(const Triangle *triangles, int num_triangles) {
@@ -224,16 +224,22 @@ class Mesh {
     }
 
     __host__ __device__ void add_ground(float y, const Material &mat) {
-        Triangle backplane_tri1(V3f(-10.0f, y, 10.0f),
-                                V3f(10.0f, y, 10.0f),
-                                V3f(10.0f, y, -10.0f));
-        Triangle backplane_tri2(V3f(-10.0f, y, 10.0f),
-                                V3f(10.0f, y, -10.0f),
-                                V3f(-10.0f, y, -10.0f));
-        backplane_tri1.set_material(mat);
-        backplane_tri2.set_material(mat);
-        add_triangle(backplane_tri1);
-        add_triangle(backplane_tri2);
+        int frag_num = 40;
+        float ground_length = 10.0f;
+        float half_length = ground_length / 2;
+        for (int i = 0; i < frag_num; i++)
+            for (int j = 0; j < frag_num; j++) {
+                V3f square_corner00 = V3f(-half_length + ground_length / frag_num * i, y, -half_length + ground_length / frag_num * j);
+                V3f square_corner11 = V3f(-half_length + ground_length / frag_num * (i + 1), y, -half_length + ground_length / frag_num * (j + 1));
+                V3f square_corner01 = V3f(-half_length + ground_length / frag_num * i, y, -half_length + ground_length / frag_num * (j + 1));
+                V3f square_corner10 = V3f(-half_length + ground_length / frag_num * (i + 1), y, -half_length + ground_length / frag_num * j);
+                Triangle square_tri1(square_corner00, square_corner01, square_corner11);
+                Triangle square_tri2(square_corner00, square_corner11, square_corner10);
+                square_tri1.set_material(mat);
+                square_tri2.set_material(mat);
+                add_triangle(square_tri1);
+                add_triangle(square_tri2);
+            }
     }
 
     __host__ __device__ void add_light(const Light &light) {
