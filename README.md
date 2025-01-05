@@ -1,9 +1,9 @@
 # Illusionary Render
 
 <!-- <p align="center">
-  <img src="README_image/image.png" alt="meshes of stanford bunny" />
+  <img src="images/image.png" alt="meshes of stanford bunny" />
 </p> -->
-![](README_image/image.png)
+![](images/image.png)
 
 
 ## Introduction
@@ -86,9 +86,9 @@ struct Vertice{
 ```
 
 <!-- <p align="center">
-  <img src="README_image/The-Stanford-Bunny-shown-on-the-left-is-reconstructed-shown-on-the-right-397-points.png" alt="meshes of stanford bunny" />
+  <img src="image/The-Stanford-Bunny-shown-on-the-left-is-reconstructed-shown-on-the-right-397-points.png" alt="meshes of stanford bunny" />
 </p> -->
-![](README_image/The-Stanford-Bunny-shown-on-the-left-is-reconstructed-shown-on-the-right-397-points.png)
+![](images/The-Stanford-Bunny-shown-on-the-left-is-reconstructed-shown-on-the-right-397-points.png)
 
 ### Implementation: transformation
 As for transformation, I borrowed a method from computer vision that is more fundamental and straightforward compared to the MVP (Model-View-Projection) transformation. Each camera has its own **intrinsic matrix**, **extrinsic matrix**, and **projection matrix**:
@@ -142,7 +142,7 @@ Specular illumination is the light that is reflected in a particular direction, 
 - **Diffuse Illumination**:
 Diffuse illumination is the light that hits a surface and is scattered in all directions, giving the surface a matte appearance. It is directly dependent on the angle between the surface normal and the incoming light direction, as described by Lambert's cosine law.
 
-![](/README_image/phong.png)
+![](/images/phong.png)
 
 The final illumination $I$  for a point on a surface is the sum of these three components:
 <p align="center"><img src="svgs/4b8977ae10ffbffb1f56705b91a0c18b.svg?invert_in_darkmode" align=middle width=240.27685274999996pt height=15.936036599999998pt/></p>
@@ -166,7 +166,7 @@ Where:
 
 This combination of ambient, diffuse, and specular illumination produces realistic lighting effects, simulating how light interacts with surfaces to create depth and highlight details in 3D rendering.
 
-![](/README_image/Phong_components_version_4.png)
+![](/images/Phong_components_version_4.png)
 
 ### Pipeline
 In `I_render`, our pipeline can be roughly divided into the following steps:
@@ -177,7 +177,7 @@ In `I_render`, our pipeline can be roughly divided into the following steps:
 
 I will seperately introduce these three steps.
 
-![](/README_image/Untitled%20Diagram.drawio.png)
+![](/images/Untitled%20Diagram.drawio.png)
 
 #### First step: initialize
 During the initialization process, we need to do the following tasks:
@@ -204,18 +204,21 @@ The specific computation progress has been explained on the former text. And as 
 ### Gallery
 In this chapter, I will showcase the results achieved by `I_render`.
 #### Depth map
+![](images/Peek-2025-01-05-18-19_2.gif)
 
-![](README_image/Peek-2024-11-11-13-40.gif)
 
 #### Normal map
-![](README_image/Peek-2024-11-10-22-03_1.gif)
+![](images/Peek-2025-01-05-18-20.gif)
 
 #### Diffuse model
-![](README_image/Peek-2024-11-11-13-45.gif)
+![](images/Peek-2025-01-05-18-22.gif)
 
 
 #### Metal model
-![](README_image/Peek-2024-11-11-13-46.gif)
+![](images/Peek-2025-01-05-18-24.gif)
+
+#### Texture model
+![](images/Peek-2025-01-05-18-39.gif)
 
 
 ## Cuda raytracing
@@ -361,13 +364,13 @@ function IntersectBVH(node, ray):
 In this pseudocode:
 - `BuildBVH` constructs the BVH tree by recursively splitting triangles and creating bounding volumes for each node.
 - `IntersectBVH` performs a ray traversal to find the closest intersection by checking bounding volumes and, if necessary, testing each triangle in the leaf nodes.
-![](README_image/image_copy.png)
+![](images/image_copy.png)
 
 
 ### Implementation: color calculation
 In the ray tracing engine, the color calculation is based on classic radiometry principles, where the light contribution from various paths is combined to determine the color at each point. This approach involves calculating the radiance (the amount of light energy) arriving at the camera along each ray. The process includes direct illumination, indirect illumination, and various light interactions such as reflection and refraction.
 
-![](README_image/image2.png)
+![](images/image2.png)
 
 
 #### Steps of Radiometric Color Calculation
@@ -482,7 +485,7 @@ In `I_render`, ray tracing is implemented with pixel-level parallelism, where ea
 
 This document outlines the per-pixel path tracing process with full pseudocode and an explanation of each key step in the algorithm. The following flowchart outlines the steps in the per-pixel path tracing algorithm within `I_render`. Each kernel function executes these steps independently for each pixel, allowing for highly parallelized color computation.
 
-![](README_image/Untitled_Diagram.drawio(1).png)
+![](images/Untitled_Diagram.drawio(1).png)
 
 
 ### Gallery
@@ -493,20 +496,20 @@ In this chapter, I will showcase the results achieved by `I_render`.
 ![](output/output_2.jpg)
 
 #### Real-time Raytrace: basic shading
-![](README_image/Peek-2024-11-11-15-33.gif)
+![](images/Peek-2024-11-11-15-33.gif)
 
 #### Real-time Raytrace: soft shadow
-![](README_image/Peek-2024-11-12-21-48_1.gif)
+![](images/Peek-2024-11-12-21-48_1.gif)
 
 #### Real-time Raytrace: reflect
-![](README_image/Peek-2024-11-12-21-53_1.gif)
-![](README_image/Peek-2024-11-12-21-54_1.gif)
-![](README_image/Peek-2024-11-12-21-51_1.gif)
+![](images/Peek-2024-11-12-21-53_1.gif)
+![](images/Peek-2024-11-12-21-54_1.gif)
+![](images/Peek-2024-11-12-21-51_1.gif)
 
 #### Real-time Raytrace: refract
-![](README_image/Peek-2024-11-12-22-11.gif)
+![](images/Peek-2024-11-12-22-11.gif)
 
 #### Real-time Raytrace: Better optimization
-![](README_image/Peek-2024-11-25-13-55.gif)
-![](README_image/Peek-2024-11-25-14-47.gif)
+![](images/Peek-2024-11-25-13-55.gif)
+![](images/Peek-2024-11-25-14-47.gif)
 

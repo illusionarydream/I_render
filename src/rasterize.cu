@@ -16,6 +16,7 @@ __device__ void atomicUpdateStruct(ZBuffer_element *address, ZBuffer_element new
         // 更新其他分量
         address->normal = newValue.normal;
         address->position = newValue.position;
+        address->texcol = newValue.texcol;
     }
 
     // 更新完成后释放锁
@@ -49,6 +50,7 @@ __global__ void initDepthBufferandImage(ZBuffer_element *depth_buffer,
         depth_buffer[idx].depth = MAX;
         depth_buffer[idx].normal = make_float3(0.0f, 0.0f, 0.0f);
         depth_buffer[idx].position = make_float3(0.0f, 0.0f, 0.0f);
+        depth_buffer[idx].texcol = make_float3(0.0f, 0.0f, 0.0f);
         depth_buffer[idx].lock = 0;
 
         if (x % super_sampling_ratio == 0 && y % super_sampling_ratio == 0) {
@@ -72,6 +74,9 @@ __global__ void transformTrianglesAndLights(
     M4f *Extrinsics,
     M4f *Inv_Extrinsics,
     M3f *Intrinsics,
+    V3f *texture,
+    int texture_width,
+    int texture_height,
     ZBuffer_element *depth_buffer) {
     // * transform the triangles and lights to the view space
     // triangles: the triangles in the scene
@@ -107,6 +112,8 @@ __global__ void transformTrianglesAndLights(
     int idx_block = threadIdx.y * blockDim.x + threadIdx.x;
     __shared__ V3f shared_triangles_vertices[BLOCK_SIZE_2D][3];  // vertices -> vertices_view
     __shared__ V3f shared_triangles_normals[BLOCK_SIZE_2D][3];   // normals -> normals_view
+    __shared__ bool shared_if_texture[BLOCK_SIZE_2D];            // if the triangle has texture
+    __shared__ float2 shared_texture_coord[BLOCK_SIZE_2D][3];    // texture coordinates
 
     // * move the data to shared memory
     if (idx < num_triangles) {
@@ -117,6 +124,12 @@ __global__ void transformTrianglesAndLights(
         for (int i = 0; i < 3; i++) {
             shared_triangles_vertices[idx_block][i] = triangle.vertices[i];
             shared_triangles_normals[idx_block][i] = triangle.normals[i];
+        }
+
+        // move the texture
+        shared_if_texture[idx_block] = triangle.if_texture;
+        for (int i = 0; i < 3; i++) {
+            shared_texture_coord[idx_block][i] = make_float2(triangle.texcoords[i][0], triangle.texcoords[i][1]);
         }
     }
 
@@ -193,6 +206,29 @@ __global__ void transformTrianglesAndLights(
                         continue;
                     }
 
+                    // if the triangle has texture
+                    // interpolate the texture coordinates
+                    float3 texture_color = make_float3(-1.0f, -1.0f, -1.0f);
+                    if (shared_if_texture[idx_block]) {
+                        float2 texcoord = make_float2(
+                            shared_texture_coord[idx_block][0].x * u +
+                                shared_texture_coord[idx_block][1].x * v +
+                                shared_texture_coord[idx_block][2].x * w,
+                            shared_texture_coord[idx_block][0].y * u +
+                                shared_texture_coord[idx_block][1].y * v +
+                                shared_texture_coord[idx_block][2].y * w);
+
+                        // get the color
+                        int tex_x = texcoord.x * texture_width;
+                        int tex_y = texcoord.y * texture_height;
+                        tex_x = min(max(tex_x, 0), texture_width - 1);
+                        tex_y = min(max(tex_y, 0), texture_height - 1);
+
+                        // get the color
+                        int tex_idx = (texture_height - tex_y - 1) * texture_width + tex_x;
+                        texture_color = make_float3(texture[tex_idx][0], texture[tex_idx][1], texture[tex_idx][2]);
+                    }
+
                     // update the depth buffer
                     int depth_idx = y * width + x;
 
@@ -207,7 +243,7 @@ __global__ void transformTrianglesAndLights(
                     float3 normal = make_float3(tmp_normal[0], tmp_normal[1], tmp_normal[2]);
                     float3 position = make_float3(tmp_position[0], tmp_position[1], tmp_position[2]);
 
-                    atomicUpdateStruct(&depth_buffer[depth_idx], {depth, normal, position, 0});
+                    atomicUpdateStruct(&depth_buffer[depth_idx], {depth, normal, position, texture_color, 0});
                 }
             }
         }
@@ -247,6 +283,7 @@ __global__ void shading(const Triangle *triangles,
                         float kn,
                         bool if_depthmap,
                         bool if_normalmap,
+                        bool if_texture,
                         int super_sampling_ratio) {
     // * shading the triangles
     // d_triangles: the triangles in the scene
@@ -328,12 +365,20 @@ __global__ void shading(const Triangle *triangles,
             shared_image[idx_block] = shared_image[idx_block] + shared_lights[i].emission.toV3f() * (diffuse + specular);
         }
 
-        // dept
-        if (if_depthmap) {
-            shared_image[idx_block] = V3f(shared_depth_buffer[idx_block].depth, shared_depth_buffer[idx_block].depth, shared_depth_buffer[idx_block].depth) - V3f(7.0f, 7.0f, 7.0f);
+        // * texture shading
+        if (if_texture && shared_depth_buffer[idx_block].texcol.x >= 0.0f) {
+            shared_image[idx_block] = V3f(shared_depth_buffer[idx_block].texcol.x,
+                                          shared_depth_buffer[idx_block].texcol.y,
+                                          shared_depth_buffer[idx_block].texcol.z) *
+                                      shared_image[idx_block];
         }
 
-        // normal
+        // * depth shading
+        if (if_depthmap) {
+            shared_image[idx_block] = (V3f(shared_depth_buffer[idx_block].depth, shared_depth_buffer[idx_block].depth, shared_depth_buffer[idx_block].depth) - V3f(7.0f, 7.0f, 7.0f)) * 0.1f;
+        }
+
+        // * normal shading
         if (if_normalmap) {
             shared_image[idx_block] = (normal + V3f(1.0f, 1.0f, 1.0f)) / 2.0f;
         }

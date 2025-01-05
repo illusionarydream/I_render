@@ -22,6 +22,7 @@
 #define MAX_light 10
 #define MIN_surface 1e-4
 #define LITTLE_FUZZ 7e-4
+#define MAX_texture 400 * 400
 
 // * V3f, M3f, V4f, M4f
 class V3f {
@@ -387,19 +388,19 @@ __forceinline__ __device__ bool barycentric(const float &x, const float &y,
     float ex1 = x1 - x, ex2 = x2 - x, ex3 = x3 - x;
     float ey1 = y1 - y, ey2 = y2 - y, ey3 = y3 - y;
 
-    float w1 = ex1 * ey2 - ex2 * ey1;
-    float w2 = ex2 * ey3 - ex3 * ey2;
-    float w3 = ex3 * ey1 - ex1 * ey3;
+    float w3 = ex1 * ey2 - ex2 * ey1;
+    float w1 = ex2 * ey3 - ex3 * ey2;
+    float w2 = ex3 * ey1 - ex1 * ey3;
 
     if (w1 * w2 < 0 || w1 * w3 < 0) {
         return false;
     }
 
-    float area = w1 * w2 + w2 * w3 + w3 * w1;
+    float area = w1 + w2 + w3;
 
-    float w1_n = w2 * w3 / area;
-    float w2_n = w3 * w1 / area;
-    float w3_n = w1 * w2 / area;
+    float w1_n = w1 / area;
+    float w2_n = w2 / area;
+    float w3_n = w3 / area;
 
     u = w1_n;
     v = w2_n;

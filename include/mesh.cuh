@@ -11,12 +11,14 @@ class Triangle {
     // * member variable
     V3f vertices[3];
     V3f normals[3];
+    V3f texcoords[3];  // only the x and y coordinates are used
 
     // editted by gpu
     V3f vertices_view[3];
     V3f normals_view[3];
 
     Material mat;
+    bool if_texture = false;
 
     // * constructor
     __host__ __device__ Triangle() {}
@@ -25,8 +27,10 @@ class Triangle {
         for (int i = 0; i < 3; i++) {
             vertices[i] = triangle.vertices[i];
             normals[i] = triangle.normals[i];
+            texcoords[i] = triangle.texcoords[i];
         }
         mat = triangle.mat;
+        if_texture = triangle.if_texture;
     }
 
     __host__ __device__ Triangle(V3f *vertices, V3f *normals) {
@@ -36,12 +40,31 @@ class Triangle {
         }
     }
 
+    __host__ __device__ Triangle(V3f *vertices, V3f *normals, V3f *texcoords) {
+        for (int i = 0; i < 3; i++) {
+            this->vertices[i] = vertices[i];
+            this->normals[i] = normals[i];
+            this->texcoords[i] = texcoords[i];
+        }
+        if_texture = true;
+    }
+
     __host__ __device__ Triangle(V3f *vertices, V3f *normals, const Material &mat) {
         for (int i = 0; i < 3; i++) {
             this->vertices[i] = vertices[i];
             this->normals[i] = normals[i];
         }
         this->mat = mat;
+    }
+
+    __host__ __device__ Triangle(V3f *vertices, V3f *normals, V3f *texcoords, const Material &mat) {
+        for (int i = 0; i < 3; i++) {
+            this->vertices[i] = vertices[i];
+            this->normals[i] = normals[i];
+            this->texcoords[i] = texcoords[i];
+        }
+        this->mat = mat;
+        if_texture = true;
     }
 
     __host__ __device__ Triangle(V3f v0, V3f v1, V3f v2) {
@@ -64,6 +87,19 @@ class Triangle {
         normals[2] = n2;
     }
 
+    __host__ __device__ Triangle(V3f v0, V3f v1, V3f v2, V3f n0, V3f n1, V3f n2, V3f t0, V3f t1, V3f t2) {
+        vertices[0] = v0;
+        vertices[1] = v1;
+        vertices[2] = v2;
+        normals[0] = n0;
+        normals[1] = n1;
+        normals[2] = n2;
+        texcoords[0] = t0;
+        texcoords[1] = t1;
+        texcoords[2] = t2;
+        if_texture = true;
+    }
+
     __host__ __device__ Triangle(V3f v0, V3f v1, V3f v2, V3f n0, V3f n1, V3f n2, const Material &mat) {
         vertices[0] = v0;
         vertices[1] = v1;
@@ -74,6 +110,20 @@ class Triangle {
         this->mat = mat;
     }
 
+    __host__ __device__ Triangle(V3f v0, V3f v1, V3f v2, V3f n0, V3f n1, V3f n2, V3f t0, V3f t1, V3f t2, const Material &mat) {
+        vertices[0] = v0;
+        vertices[1] = v1;
+        vertices[2] = v2;
+        normals[0] = n0;
+        normals[1] = n1;
+        normals[2] = n2;
+        texcoords[0] = t0;
+        texcoords[1] = t1;
+        texcoords[2] = t2;
+        this->mat = mat;
+        if_texture = true;
+    }
+
     // * member functions
     __host__ __device__ V3f get_vertex(int i) const {
         return vertices[i];
@@ -81,6 +131,10 @@ class Triangle {
 
     __host__ __device__ V3f get_normal(int i) const {
         return normals[i];
+    }
+
+    __host__ __device__ V3f get_texcoord(int i) const {
+        return texcoords[i];
     }
 
     __host__ __device__ Bbox get_bbox() const {
@@ -97,6 +151,10 @@ class Triangle {
     __host__ __device__ void
     set_material(const Material &mat) {
         this->mat = mat;
+    }
+
+    __host__ __device__ Material get_material() const {
+        return mat;
     }
 
     // get the normal of the triangle
@@ -155,8 +213,10 @@ class Triangle {
         for (int i = 0; i < 3; i++) {
             vertices[i] = triangle.vertices[i];
             normals[i] = triangle.normals[i];
+            texcoords[i] = triangle.texcoords[i];
         }
         mat = triangle.mat;
+        if_texture = triangle.if_texture;
         return *this;
     }
 };
@@ -169,6 +229,10 @@ class Mesh {
 
     Light light[MAX_light];
     int num_lights;
+
+    V3f texture[MAX_texture];
+    int texture_width;
+    int texture_height;
 
     // * constructor
     __host__ __device__ Mesh() {
@@ -224,7 +288,7 @@ class Mesh {
     }
 
     __host__ __device__ void add_ground(float y, const Material &mat) {
-        int frag_num = 40;
+        int frag_num = 30;
         float ground_length = 10.0f;
         float half_length = ground_length / 2;
         for (int i = 0; i < frag_num; i++)
@@ -252,6 +316,22 @@ class Mesh {
             this->light[num_lights + i] = lights[i];
         }
         this->num_lights += num_lights;
+    }
+
+    __host__ __device__ void add_texture(V3f *texture, int texture_width, int texture_height) {
+        for (int i = 0; i < texture_width * texture_height; i++) {
+            this->texture[i] = texture[i];
+        }
+        this->texture_width = texture_width;
+        this->texture_height = texture_height;
+    }
+
+    __host__ __device__ int get_texture_width() const {
+        return texture_width;
+    }
+
+    __host__ __device__ int get_texture_height() const {
+        return texture_height;
     }
 
     // get hitting triangle

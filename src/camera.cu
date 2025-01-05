@@ -118,14 +118,17 @@ void Camera::setGPUParameters_rasterize(const Mesh& meshes,
     // * set the parameters for GPU
     // meshes: the meshes in the scene
     // lights: the lights in the scene
+    // texture: the texture of the meshes
     // ! use cuda functions
     cudaMalloc(&d_triangles, meshes.get_num_triangles() * sizeof(Triangle));
     cudaMalloc(&d_lights, meshes.get_num_lights() * sizeof(Light));
+    cudaMalloc(&d_texture, meshes.get_texture_width() * meshes.get_texture_height() * sizeof(V3f));
     cudaMalloc(&d_buffer_elements, width * height * super_sampling_ratio * super_sampling_ratio * sizeof(ZBuffer_element));
     cudaMalloc(&d_image, width * height * sizeof(V3f));
 
     cudaMemcpy(d_triangles, meshes.triangles, meshes.get_num_triangles() * sizeof(Triangle), cudaMemcpyHostToDevice);
     cudaMemcpy(d_lights, meshes.light, meshes.get_num_lights() * sizeof(Light), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_texture, meshes.texture, meshes.get_texture_width() * meshes.get_texture_height() * sizeof(V3f), cudaMemcpyHostToDevice);
 }
 
 // render by rasterization
@@ -195,6 +198,10 @@ void Camera::render_rasterization(const int width,
                                                  d_Extrinsics,
                                                  d_Inv_Extrinsics,
                                                  d_Intrinsics,
+                                                 // texture
+                                                 d_texture,
+                                                 meshes.get_texture_width(),
+                                                 meshes.get_texture_height(),
                                                  // immediate variables
                                                  d_buffer_elements);
     // synchronize the device
@@ -224,6 +231,7 @@ void Camera::render_rasterization(const int width,
                              kn,
                              if_depthmap,
                              if_normalmap,
+                             if_texture,
                              super_sampling_ratio);
     // synchronize the device
     cudaDeviceSynchronize();

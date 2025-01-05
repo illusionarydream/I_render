@@ -46,7 +46,7 @@ class Window {
    public:
     // ! all the mesh and camera parameters are set here
     // ! rasterization
-    Window(int _width = IMAGE_WIDTH, int _height = IMAGE_HEIGHT, bool render_type = 0, std::string obj_path = "") {
+    Window(int _width = IMAGE_WIDTH, int _height = IMAGE_HEIGHT, bool render_type = 0, std::string obj_path = "", std::string texture_path = "") {
         if (render_type == 0)
             this->render_type = 0;
         else
@@ -58,9 +58,18 @@ class Window {
             height = _height;
 
             // * read the mesh
-            auto triangles = load_obj(obj_path);
+            bool if_texture = (texture_path != "");
+            auto triangles = load_obj(obj_path, if_texture, V3f(0.0f, -1.5f, 0.0f), 3.0f);
             Triangle* d_triangles = triangles.data();
             meshes.add_triangles(d_triangles, triangles.size());
+
+            // * read the texture
+            int texture_width, texture_height;
+            if (if_texture) {
+                auto texture = load_texture(texture_path, texture_width, texture_height);
+                V3f* d_texture = texture.data();
+                meshes.add_texture(d_texture, texture_width, texture_height);
+            }
 
             // * set the mesh material
             Material material(1, V4f(1.0f, 1.0f, 1.0f, 1.0f));
@@ -77,6 +86,7 @@ class Window {
             meshes.add_light(l2);
 
             // * set the camera
+            camera.settextrue(if_texture);
             camera.setIntrinsics(2.0f, 2.0f, 0.5f, 0.5f, 0.0f);
             camera.setExtrinsics(V4f(0.0f, 0.0f, radius, 1.0f), V4f(0.0f, 0.0f, -1.0f, 1.0f), V4f(0.0f, -1.0f, 0.0f, 0.0f));  // initial position of the camera
         } else {
@@ -86,19 +96,19 @@ class Window {
             height = _height;
 
             // * read the mesh
-            auto triangles = load_obj(obj_path);
+            auto triangles = load_obj(obj_path, false, V3f(0.0f, -1.5f, 0.0f), 3.0f);
             Triangle* d_triangles = triangles.data();
             meshes.add_triangles(d_triangles, triangles.size());
 
             // * set the mesh material
-            Material material(2, V4f(1.0f, 1.0f, 1.0f, 1.0f), 0.1);
+            Material material(1, V4f(1.0f, 1.0f, 1.0f, 1.0f));
             meshes.set_material(material);  // this step must be before add_triangles, because the added light will not have the material
 
             // * set the light
             Triangle light_tri(V3f(10.0f, 5.0f, 10.0f),
                                V3f(-10.0f, 5.0f, 0.0f),
                                V3f(10.0f, 5.0f, -10.0f));
-            Material light_material(0, V4f(1.5f, 0.2f, 0.0f, 1.0f));
+            Material light_material(0, V4f(1.0f, 1.5f, 1.5f, 1.0f));
             light_tri.set_material(light_material);
             meshes.add_triangle(light_tri);
 
@@ -243,7 +253,7 @@ class Window {
 
 // * static members initialization
 Camera Window::camera;
-float Window::sensitivity = 0.2f;
+float Window::sensitivity = 0.4f;
 float Window::radius = 10.0f;
 int Window::sample_Max = 350;
 

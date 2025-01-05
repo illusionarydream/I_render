@@ -23,6 +23,7 @@ class Camera {
     bool if_pathtracing = false;
     bool if_more_kernel = false;
     bool if_show_info = false;
+    bool if_texture = false;
 
     float russian_roulette = 0.80f;
     int samples_per_pixel = 100;
@@ -31,7 +32,7 @@ class Camera {
     // * for rasterization
     float ka = 0.1;
     float kd = 0.1;
-    float ks = 1.2;
+    float ks = 1.5;
     float kn = 32.0;
 
     // * pre-gpu parameters
@@ -40,6 +41,9 @@ class Camera {
     Light* d_lights;
     ZBuffer_element* d_buffer_elements;
 
+    // texture
+    V3f* d_texture;
+
     // raytrace
     Mesh* d_meshes;
     Ray* d_rays;
@@ -47,7 +51,6 @@ class Camera {
 
     // all
     V3f* d_image;
-
     int super_sampling_ratio = 4;  // cannot larger than 4
 
     // * constructors
@@ -139,6 +142,26 @@ class Camera {
     void setGPUParameters_rasterize(const Mesh& meshes,
                                     const int width,
                                     const int height);
+
+    void setka(float ka) {
+        this->ka = ka;
+    }
+
+    void setkd(float kd) {
+        this->kd = kd;
+    }
+
+    void setks(float ks) {
+        this->ks = ks;
+    }
+
+    void setkn(float kn) {
+        this->kn = kn;
+    }
+
+    void settextrue(bool if_texture) {
+        this->if_texture = if_texture;
+    }
 
     // store the image
     void storeImage(const std::string& filename,

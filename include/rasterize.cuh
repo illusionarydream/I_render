@@ -10,6 +10,7 @@ struct ZBuffer_element {
     float depth;
     float3 normal;
     float3 position;
+    float3 texcol;
     int lock;
 };
 
@@ -32,6 +33,9 @@ __global__ void transformTrianglesAndLights(
     M4f *Extrinsics,
     M4f *Inv_Extrinsics,
     M3f *Intrinsics,
+    V3f *texture,
+    int texture_width,
+    int texture_height,
     ZBuffer_element *depth_buffer);
 
 __global__ void shading(const Triangle *triangles,
@@ -49,6 +53,7 @@ __global__ void shading(const Triangle *triangles,
                         float kn,
                         bool if_depthmap,
                         bool if_normalmap,
+                        bool if_texture,
                         int super_sampling_ratio);
 
 #endif  // RASTERIZE_CUH

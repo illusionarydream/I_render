@@ -8,6 +8,7 @@ enable_language(CUDA)
 # C++ standard
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CUDA_ARCHITECTURES 86)
+set(GLFW3_DIR /usr/lib/cmake/glfw3)
 
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
