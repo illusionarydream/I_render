@@ -14,55 +14,97 @@
 - **CUDA ray tracing**
   The CUDA ray tracing part is used to simulate the propagation and reflection of light within the scene. Through CUDA programming, we can efficiently compute the interactions between light and objects, producing high-quality images.
 
-The combination of these two parts allows `I_render` to achieve faster rendering speeds while maintaining high image quality.
+Besides these, I also implement a **mixed rendering approach** that combines rasterization and ray tracing to achieve optimal performance and visual quality. The combination of these two parts allows `I_render` to achieve faster rendering speeds while maintaining high image quality.
+
+---
 
 ## Tutorial
 In this module, we will provide a brief introduction to using `I_render`. This section will cover the basic setup and essential functions needed to get started with this 3D rendering module, particularly focusing on leveraging CUDA parallelization for enhanced performance.
 
 ### Setup
-To use `I_render`, ensure the following C++ libraries are installed:
+This project is a graphics assignment that utilizes CUDA, OpenGL, GLEW, GLFW, OpenCV, and Eigen. The following guide will help you set up the required environment to build and run the project.
 
-- **Eigen**: For matrix operations and linear algebra computations.
-- **CUDA**: For GPU-based parallelization to speed up rendering processes.
-- **OpenCV** (optional): For image processing and camera transformations, if your project involves image-based operations.
-- **GLM**: A C++ mathematics library for graphics software, useful for handling vectors, matrices, and transformations in 3D graphics.
-- **GLEW** (OpenGL Extension Wrangler Library): For managing OpenGL extensions if rendering involves OpenGL integration.
-- **OpenGL**: For 3D graphics rendering, enabling hardware-accelerated rendering capabilities in `I_render`.
+#### Hardware Requirements
+- **GPU**: An NVIDIA GPU supporting CUDA Compute Capability 8.6 (e.g., NVIDIA Ampere series GPUs).
+- **Operating System**: Linux (Ubuntu 20.04+ recommended).
 
-Ensure these dependencies are properly set up to compile and run `I_render` efficiently.
+#### Software Requirements
+- **CUDA Toolkit**: Ensure CUDA Toolkit is installed and environment variables are correctly configured.
+- **CMake**: Version 3.10 or higher.
+- **Compiler**: A C++ compiler supporting C++14.
+
+#### Required Libraries
+
+Ensure the following libraries are installed:
+- **OpenGL**: OpenGL development libraries.
+- **GLEW**: OpenGL Extension Wrangler Library.
+- **GLFW**: OpenGL Framework for creating windows and handling input.
+- **OpenCV**: Open source computer vision library.
+- **glm**: OpenGL Mathematics library.
+- **Eigen**: Header-only C++ library for linear algebra.
+
+#### Installation Steps
+
+Run the following commands to install the required libraries:
+
+```bash
+# Update package list
+sudo apt update
+
+# Install CMake, GCC, and essential build tools
+sudo apt install -y cmake build-essential gcc g++ 
+
+# Install OpenGL, GLFW, and GLEW
+sudo apt install -y libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev
+sudo apt install -y libglew-dev libglfw3-dev
+
+# Install glm (OpenGL Mathematics library)
+sudo apt install -y libglm-dev
+
+# Install OpenCV
+sudo apt install -y libopencv-dev
+
+# Verify CUDA installation (if not installed, refer to the NVIDIA CUDA installation guide)
+nvcc --version
+```
 
 ### Run
-You can directly run the `run.sh` bash in your terminal. To more details, you can modify the `src/main.cpp`, `include/camera.cuh` to get more kinds of output.
+Firstly, clone the repository and navigate to the project directory.
+
+```
+git clone https://github.com/illusionarydream/I_render.git
+cd I_render
+```
+Secondly, you need to make sure you have installed the required libraries and the CUDA toolkit. Then, you can edit the `CMakeLists.txt` file to adjust your own device settings.
+
+
+```
+...
+set(GLFW3_DIR /usr/lib/cmake/glfw3) # replace it with your path to glfw3.
+...
+include_directories(/opt/cuda/targets/x86_64-linux/include) # replace it with your path to cuda include directory
+link_directories(/opt/cuda/targets/x86_64-linux/lib) # replace it with your path to cuda lib directory
+...
+
+```
+
+You can directly run the `run.sh` bash in your terminal. It will directly build the project and run the executable file. To more details, you can modify the `src/main.cpp` to get more kinds of output.
 
 - `main.cpp`
 ```
-Window win(IMAGE_WIDTH, IMAGE_HEIGHT, type, obj_file_name);
+Window win(IMAGE_WIDTH, IMAGE_HEIGHT, type, obj_file_name, texture_file_name);
 
 IMAGE_WIDTH: the resolution width of your final output.
 IMAGE_HEIGHT: the resolution height of your final output.
-type: use raytracer or rasterize.
+type: use raytracer, rasterization, or mixed.
 obj_file_name: the mesh file.
-```
-- `camera.cuh`
-```
-bool if_depthmap = false;    // if output the depth map or not
-bool if_normalmap = false;   // if output the normal map or not
-bool if_pathtracing = false; // if pathtracing or not
-bool if_more_kernel = false; // if use more than one kernel for each pixel
-bool if_show_info = false;   // if show the information during the rendering progress
+texture_file_name: the texture file. if you don't have a texture file, you can skip this parameter.
 
-float russian_roulette = 0.80f; // RR ratio
-int samples_per_pixel = 300;    // each pixel samples number
-int samples_per_kernel = 20;    // each pixel kernel number
-
-// * for rasterization
-float ka = 0.1;  // ambient light ratio
-float kd = 0.1;  // diffuse light ratio
-float ks = 1.2;  // specular light ratio
-float kn = 32.0; // exponent
 ```
 
 I will present some samples in the `Gallery` part.
+
+---
 
 ## Cuda rasterization
 ### Brief Intro
@@ -522,3 +564,5 @@ In this chapter, I will showcase the results achieved by `I_render`.
 
 #### Basic shading
 ![](images/Peek-2025-01-05-20-01.gif)
+![](images/Peek-2025-01-05-20-38.gif)
+![](images/Peek-2025-01-05-20-41.gif)

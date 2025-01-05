@@ -8,7 +8,7 @@ enable_language(CUDA)
 # C++ standard
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CUDA_ARCHITECTURES 86)
-set(GLFW3_DIR /usr/lib/cmake/glfw3)
+set(GLFW3_DIR /usr/lib/cmake/glfw3) # replace it with your path to glfw3.
 
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
@@ -27,8 +27,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories("include")
 include_directories("eigen-3.4.0")
 include_directories("cuda")
-include_directories(/opt/cuda/targets/x86_64-linux/include)
-link_directories(/opt/cuda/targets/x86_64-linux/lib)
+include_directories(/opt/cuda/targets/x86_64-linux/include) # replace it with your path to cuda include directory
+link_directories(/opt/cuda/targets/x86_64-linux/lib) # replace it with your path to cuda lib directory
 
 # Add the executable
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -36,7 +36,7 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 # Add compile options for CUDA
 target_compile_options(${PROJECT_NAME} PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:--gpu-code=sm_86>
-    $<$<COMPILE_LANGUAGE:CUDA>:-arch=compute_86>)
+    $<$<COMPILE_LANGUAGE:CUDA>:-arch=compute_86>) # replace it with your GPU device standard
     
 
 target_link_libraries(${PROJECT_NAME} ${OpenCV_LIBS} ${OPENGL_LIBRARIES} GLEW::GLEW glfw glm::glm)

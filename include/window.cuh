@@ -149,14 +149,14 @@ class Window {
             }
 
             // * set the mesh material
-            Material material(1, V4f(1.0f, 1.0f, 1.0f, 1.0f));
+            Material material(2, V4f(1.0f, 1.0f, 1.0f, 1.0f), 0.1);
             meshes.set_material(material);  // this step must be before add_triangles, because the added light will not have the material
 
             // * set the light for raytracing
             Triangle light_tri(V3f(10.0f, 5.0f, 10.0f),
                                V3f(-10.0f, 5.0f, 0.0f),
                                V3f(10.0f, 5.0f, -10.0f));
-            Material light_material(0, V4f(1.0f, 1.5f, 1.5f, 1.0f));
+            Material light_material(0, V4f(1.0f, 1.0f, 1.0f, 1.0f));
             light_tri.set_material(light_material);
             meshes.add_triangle(light_tri);
 
