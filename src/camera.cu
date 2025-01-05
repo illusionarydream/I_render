@@ -16,7 +16,9 @@ void Camera::setGPUParameters_raytrace(const Mesh& meshes,
 void Camera::render_raytrace(const int width,
                              const int height,
                              const Mesh& meshes,
-                             std::vector<V3f>& image) {
+                             std::vector<V3f>& image,
+                             // other parameters
+                             const bool if_mixed) {
     // * render the scene by ray tracing
     // width: width of the image
     // height: height of the image
@@ -56,7 +58,8 @@ void Camera::render_raytrace(const int width,
                                                 time(0),
                                                 width,
                                                 height,
-                                                samples_per_kernel);
+                                                samples_per_kernel,
+                                                if_mixed);
 
     // synchronize the device
     cudaDeviceSynchronize();
@@ -245,4 +248,23 @@ void Camera::render_rasterization(const int width,
     cudaFree(d_Intrinsics);
 
     return;
+}
+
+void Camera::render_mixed(const int width,
+                          const int height,
+                          const Mesh& meshes,
+                          std::vector<V3f>& image) {
+    // * render the scene by mixed rendering
+    if (if_show_info)
+        printf("Camera::render_mixed\n");
+
+    // render the scene by rasterization
+    if (if_show_info)
+        printf("Camera::render_rasterization\n");
+    render_rasterization(width, height, meshes, image);
+
+    // render the scene by ray tracing
+    if (if_show_info)
+        printf("Camera::render_raytrace\n");
+    render_raytrace(width, height, meshes, image, true);
 }

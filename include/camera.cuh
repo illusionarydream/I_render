@@ -25,6 +25,7 @@ class Camera {
     bool if_show_info = false;
     bool if_texture = false;
 
+    // * for raytracing
     float russian_roulette = 0.80f;
     int samples_per_pixel = 100;
     int samples_per_kernel = 20;
@@ -80,6 +81,10 @@ class Camera {
     // * member functions
     void setSamplePerPixel(const int samples_per_pixel) {
         this->samples_per_pixel = samples_per_pixel;
+    }
+
+    void setRussianRoulette(float russian_roulette) {
+        this->russian_roulette = russian_roulette;
     }
 
     void setIntrinsics(float f_sx = 1.0f, float f_sy = 1.0f, float c_x = 1.0f, float c_y = 1.0f, float s = 0.0f) {
@@ -163,6 +168,10 @@ class Camera {
         this->if_texture = if_texture;
     }
 
+    void setsuper_sampling_ratio(int super_sampling_ratio) {
+        this->super_sampling_ratio = super_sampling_ratio;
+    }
+
     // store the image
     void storeImage(const std::string& filename,
                     const int width,
@@ -181,12 +190,19 @@ class Camera {
     void render_raytrace(const int width,
                          const int height,
                          const Mesh& meshes,
-                         std::vector<V3f>& image);
+                         std::vector<V3f>& image,
+                         // other parameters
+                         const bool if_mixed = false);
 
     void render_rasterization(const int width,
                               const int height,
                               const Mesh& meshes,
                               std::vector<V3f>& image);
+
+    void render_mixed(const int width,
+                      const int height,
+                      const Mesh& meshes,
+                      std::vector<V3f>& image);
 };
 
 #endif  // CAMERA_CUH

@@ -34,7 +34,7 @@ class Window {
     static Camera camera;
     Mesh meshes;
     static float radius;
-    bool render_type;  // 0-rasterization, 1-ray tracing
+    int render_type;  // 0-rasterization, 1-ray tracing, 2-mixed rendering
     static int sample_Max;
 
     // for mouse callback
@@ -46,11 +46,13 @@ class Window {
    public:
     // ! all the mesh and camera parameters are set here
     // ! rasterization
-    Window(int _width = IMAGE_WIDTH, int _height = IMAGE_HEIGHT, bool render_type = 0, std::string obj_path = "", std::string texture_path = "") {
+    Window(int _width = IMAGE_WIDTH, int _height = IMAGE_HEIGHT, int render_type = 0, std::string obj_path = "", std::string texture_path = "") {
         if (render_type == 0)
             this->render_type = 0;
-        else
+        else if (render_type == 1)
             this->render_type = 1;
+        else if (render_type == 2)
+            this->render_type = 2;
         if (render_type == 0) {
             // ! rasterization
             // * set basic parameters
@@ -89,7 +91,7 @@ class Window {
             camera.settextrue(if_texture);
             camera.setIntrinsics(2.0f, 2.0f, 0.5f, 0.5f, 0.0f);
             camera.setExtrinsics(V4f(0.0f, 0.0f, radius, 1.0f), V4f(0.0f, 0.0f, -1.0f, 1.0f), V4f(0.0f, -1.0f, 0.0f, 0.0f));  // initial position of the camera
-        } else {
+        } else if (render_type == 1) {
             // ! ray tracing
             // * set basic parameters
             width = _width;
@@ -126,9 +128,63 @@ class Window {
 
             // * set the camera sampling
             camera.setSamplePerPixel(sample_Max - 200);
+        } else if (render_type == 2) {
+            // ! mixed rendering
+            // * set basic parameters
+            width = _width;
+            height = _height;
+
+            // * read the mesh
+            bool if_texture = (texture_path != "");
+            auto triangles = load_obj(obj_path, if_texture, V3f(0.0f, -1.5f, 0.0f), 3.0f);
+            Triangle* d_triangles = triangles.data();
+            meshes.add_triangles(d_triangles, triangles.size());
+
+            // * read the texture
+            int texture_width, texture_height;
+            if (if_texture) {
+                auto texture = load_texture(texture_path, texture_width, texture_height);
+                V3f* d_texture = texture.data();
+                meshes.add_texture(d_texture, texture_width, texture_height);
+            }
+
+            // * set the mesh material
+            Material material(1, V4f(1.0f, 1.0f, 1.0f, 1.0f));
+            meshes.set_material(material);  // this step must be before add_triangles, because the added light will not have the material
+
+            // * set the light for raytracing
+            Triangle light_tri(V3f(10.0f, 5.0f, 10.0f),
+                               V3f(-10.0f, 5.0f, 0.0f),
+                               V3f(10.0f, 5.0f, -10.0f));
+            Material light_material(0, V4f(1.0f, 1.5f, 1.5f, 1.0f));
+            light_tri.set_material(light_material);
+            meshes.add_triangle(light_tri);
+
+            // * set the light for rasterization
+            Light l1 = Light(V4f(15.0f, 15.0f, 15.0f, 1.0f), V4f(0.0f, 5.0f, 0.0f, 1.0f), 1.0f);
+            meshes.add_light(l1);
+            Light l2 = Light(V4f(10.0f, 10.0f, 10.0f, 1.0f), V4f(-3.0f, 0.0f, -2.0f, 1.0f), 1.0f);
+            meshes.add_light(l2);
+
+            // * set the backplane
+            Material backplane_material(1, V4f(1.0f, 1.0f, 1.0f, 1.0f));
+            meshes.add_ground(-1.5f, backplane_material);
+
+            // * build BVH
+            meshes.build_BVH();
+
+            // * set the camera
+            camera.settextrue(if_texture);
+            camera.if_pathtracing = true;
+            camera.setIntrinsics(2.0f, 2.0f, 0.5f, 0.5f, 0.0f);
+            camera.setExtrinsics(V4f(0.0f, 0.0f, radius, 1.0f), V4f(0.0f, 0.0f, 0.0f, 1.0f), V4f(0.0f, -1.0f, 0.0f, 0.0f));  // initial position of the camera
+
+            // * set the camera sampling
+            camera.setSamplePerPixel(sample_Max - 250);
+            camera.setRussianRoulette(0.60f);
+            camera.setsuper_sampling_ratio(1);
         }
     }
-
     static void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
         static bool firstMouse = true;
         static float lastX = 400, lastY = 300;
@@ -181,6 +237,7 @@ class Window {
         // * adapt the camera sampling by moving velocity
         int move_velocity = xoffset * xoffset + yoffset * yoffset;
         int samples_per_pixel = 20 + sample_Max / (1 + 10 * move_velocity);
+
         camera.setSamplePerPixel(samples_per_pixel);
     }
 
@@ -191,8 +248,12 @@ class Window {
         // prepare the camera parameters
         if (render_type == 1)
             camera.setGPUParameters_raytrace(meshes, width, height);
-        else
+        else if (render_type == 0)
             camera.setGPUParameters_rasterize(meshes, width, height);
+        else if (render_type == 2) {
+            camera.setGPUParameters_raytrace(meshes, width, height);
+            camera.setGPUParameters_rasterize(meshes, width, height);
+        }
 
         while (!glfwWindowShouldClose(window)) {
             // eliminate the flicker
@@ -203,8 +264,10 @@ class Window {
 
             if (render_type == 1)
                 camera.render_raytrace(height, width, meshes, image);
-            else
+            else if (render_type == 0)
                 camera.render_rasterization(height, width, meshes, image);
+            else if (render_type == 2)
+                camera.render_mixed(height, width, meshes, image);
 
             // Gradually restores rendering quality
             camera.samples_per_pixel = MIN(camera.samples_per_pixel + 50, sample_Max);

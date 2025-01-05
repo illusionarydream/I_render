@@ -513,3 +513,12 @@ In this chapter, I will showcase the results achieved by `I_render`.
 ![](images/Peek-2024-11-25-13-55.gif)
 ![](images/Peek-2024-11-25-14-47.gif)
 
+
+## Mixed rendering
+Finally, I implement mixed rendering in `I_render`. The mixed rendering combines the advantages of rasterization and ray tracing, leveraging the strengths of each technique to achieve high-quality, efficient rendering. In this approach, rasterization is used for primary visibility testing and shading, while ray tracing is employed for secondary visibility, reflections, and refractions.
+
+### Gallery
+In this chapter, I will showcase the results achieved by `I_render`.
+
+#### Basic shading
+![](images/Peek-2025-01-05-20-01.gif)

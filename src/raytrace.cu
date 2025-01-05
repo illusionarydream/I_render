@@ -5,7 +5,8 @@ __global__ void initCurandStates_and_image(curandState *state,
                                            int seed,
                                            int width,
                                            int height,
-                                           int samples_per_kernel) {
+                                           int samples_per_kernel,
+                                           bool if_mixed) {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     int z = blockIdx.z * blockDim.z + threadIdx.z;
@@ -13,7 +14,7 @@ __global__ void initCurandStates_and_image(curandState *state,
     if (x < width && y < height && z < samples_per_kernel) {
         int random_idx = y * width * samples_per_kernel + x * samples_per_kernel + z;
         curand_init(seed, random_idx, 0, &state[random_idx]);
-        if (z == 0) {
+        if (z == 0 && if_mixed == false) {
             image[y * width + x] = V3f(0.0f, 0.0f, 0.0f);
         }
     }
@@ -205,7 +206,7 @@ __global__ void raytrace(const Mesh *mesh,
                 atomicAdd(&image[y * width + x][1], accum_col[1]);
                 atomicAdd(&image[y * width + x][2], accum_col[2]);
             } else {
-                image[y * width + x] = V3f(accum_col[0], accum_col[1], accum_col[2]);
+                image[y * width + x] = V3f(accum_col[0], accum_col[1], accum_col[2]) + image[y * width + x];
             }
         }
     }

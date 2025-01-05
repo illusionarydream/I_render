@@ -10,7 +10,8 @@ __global__ void initCurandStates_and_image(curandState *state,
                                            int seed,
                                            int width,
                                            int height,
-                                           int samples_per_kernel);
+                                           int samples_per_kernel,
+                                           bool if_mixed);
 
 __global__ void generateRayKernel(const M4f *Inv_Extrinsic,
                                   const M3f *Inv_Intrinsic,
