@@ -275,6 +275,12 @@ class Mesh {
         triangles[tri_idx].set_material(mat);
     }
 
+    __host__ __device__ void set_material(const Material &mat, int tri_idx, int num_tri) {
+        for (int i = tri_idx; i < tri_idx + num_tri; i++) {
+            triangles[i].set_material(mat);
+        }
+    }
+
     __host__ __device__ void add_triangle(const Triangle &triangle) {
         triangles[num_triangles] = triangle;
         this->num_triangles++;

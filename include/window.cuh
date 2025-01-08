@@ -98,13 +98,19 @@ class Window {
             height = _height;
 
             // * read the mesh
-            auto triangles = load_obj(obj_path, false, V3f(0.0f, -1.5f, 0.0f), 3.0f);
-            Triangle* d_triangles = triangles.data();
-            meshes.add_triangles(d_triangles, triangles.size());
+            auto triangles1 = load_obj(obj_path, false, V3f(0.0f, -1.5f, -2.0f), 3.0f);
+            auto triangles2 = load_obj(obj_path, false, V3f(0.0f, -1.5f, 0.0f), 3.0f);
+            Triangle* d_triangles1 = triangles1.data();
+            Triangle* d_triangles2 = triangles2.data();
+            meshes.add_triangles(d_triangles1, triangles1.size());
+            meshes.add_triangles(d_triangles2, triangles2.size());
 
             // * set the mesh material
-            Material material(1, V4f(1.0f, 1.0f, 1.0f, 1.0f));
-            meshes.set_material(material);  // this step must be before add_triangles, because the added light will not have the material
+            Material material1(3, V4f(1.0f, 0.5f, 1.0f, 1.0f), 0.9);
+            meshes.set_material(material1, 0, triangles1.size());  // this step must be before add_triangles, because the added light will not have the material
+
+            Material material2(2, V4f(1.0f, 1.0f, 0.5f, 1.0f), 0.1);
+            meshes.set_material(material2, triangles1.size(), triangles2.size());
 
             // * set the light
             Triangle light_tri(V3f(10.0f, 5.0f, 10.0f),
@@ -122,6 +128,7 @@ class Window {
             meshes.build_BVH();
 
             // * set the camera
+            camera.setRussianRoulette(0.95f);
             camera.if_pathtracing = true;
             camera.setIntrinsics(2.0f, 2.0f, 0.5f, 0.5f, 0.0f);
             camera.setExtrinsics(V4f(0.0f, 0.0f, radius, 1.0f), V4f(0.0f, 0.0f, 0.0f, 1.0f), V4f(0.0f, -1.0f, 0.0f, 0.0f));  // initial position of the camera
@@ -236,7 +243,7 @@ class Window {
 
         // * adapt the camera sampling by moving velocity
         int move_velocity = xoffset * xoffset + yoffset * yoffset;
-        int samples_per_pixel = 20 + sample_Max / (1 + 10 * move_velocity);
+        int samples_per_pixel = 10 + sample_Max / (1 + 40 * move_velocity);
 
         camera.setSamplePerPixel(samples_per_pixel);
     }
