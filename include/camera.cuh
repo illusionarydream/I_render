@@ -28,7 +28,7 @@ class Camera {
     // * for raytracing
     float russian_roulette = 0.80f;
     int samples_per_pixel = 100;
-    int samples_per_kernel = 10;
+    int samples_per_kernel = 1;
 
     // * for rasterization
     float ka = 0.1;

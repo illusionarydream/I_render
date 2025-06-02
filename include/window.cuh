@@ -139,7 +139,7 @@ class Window {
             camera.setExtrinsics(V4f(0.0f, 0.0f, radius, 1.0f), V4f(0.0f, 0.0f, 0.0f, 1.0f), V4f(0.0f, -1.0f, 0.0f, 0.0f));  // initial position of the camera
 
             // * set the camera sampling
-            camera.setSamplePerPixel(10);  // ! set to a constant
+            camera.setSamplePerPixel(5);  // ! set to a constant
         } else if (render_type == 2) {
             // ! mixed rendering
             // * set basic parameters
@@ -251,10 +251,12 @@ class Window {
 
     static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
         radius -= yoffset * sensitivity;
-        if (radius < 1.0f) radius = 1.0f;    // 防止摄像机距离过近
-        if (radius > 50.0f) radius = 20.0f;  // 防止摄像机距离过远
+        if (radius < 5.0f) radius = 5.0f;    // 防止摄像机距离过近
+        if (radius > 20.0f) radius = 20.0f;  // 防止摄像机距离过远
 
+        // update the camera position
         camera_pos = radius * normalize(camera_pos);
+        camera_pos[3] = 1.0f;
 
         // set the camera extrinsics
         camera.setExtrinsics(camera_pos, camera_lookat, camera_up);
