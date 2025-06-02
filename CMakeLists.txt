@@ -8,21 +8,20 @@ enable_language(CUDA)
 # C++ standard
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CUDA_ARCHITECTURES 86)
-set(GLFW3_DIR /usr/lib/cmake/glfw3) # replace it with your path to glfw3.
+set(GLFW3_DIR "/usr/lib/cmake/glfw3") # replace it with your path to glfw3.
+set(OpenCV_DIR "/usr/local/lib/cmake/opencv4")
 
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
+find_package(OpenCV REQUIRED)
 
 # All src_code
 # Add the source files
 file(GLOB SOURCES "src/*.cpp" "src/*.cu")
 
-
-
 # All headers
-find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories("include")
 include_directories("eigen-3.4.0")

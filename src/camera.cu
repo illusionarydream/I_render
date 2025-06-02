@@ -7,6 +7,7 @@ void Camera::setGPUParameters_raytrace(const Mesh& meshes,
     cudaMalloc(&d_meshes, sizeof(Mesh));
     cudaMalloc(&d_rays, width * height * sizeof(Ray));
     cudaMalloc(&d_image, width * height * sizeof(V3f));
+    cudaMalloc(&d_image_denoise, width * height * sizeof(V3f));
     cudaMalloc((void**)&devStates, width * height * samples_per_pixel * sizeof(curandState));
 
     cudaMemcpy(d_meshes, &meshes, sizeof(Mesh), cudaMemcpyHostToDevice);
@@ -104,8 +105,22 @@ void Camera::render_raytrace(const int width,
     // synchronize the device
     cudaDeviceSynchronize();
 
-    // copy the data back
-    cudaMemcpy(image.data(), d_image, image.size() * sizeof(V3f), cudaMemcpyDeviceToHost);
+    if (if_denoise) {
+        // * denoise
+        if (if_show_info)
+            printf("Camera::denoise\n");
+
+        denoiseKernel<<<grid, block>>>(d_image_denoise,
+                                       d_image,
+                                       width,
+                                       height,
+                                       denoise_kernel_size);
+
+        // copy the data back
+        cudaMemcpy(image.data(), d_image_denoise, image.size() * sizeof(V3f), cudaMemcpyDeviceToHost);
+    } else
+        // * no denoise
+        cudaMemcpy(image.data(), d_image, image.size() * sizeof(V3f), cudaMemcpyDeviceToHost);
 
     // free the memory
     cudaFree(d_Inv_Extrinsics);
@@ -128,6 +143,7 @@ void Camera::setGPUParameters_rasterize(const Mesh& meshes,
     cudaMalloc(&d_texture, meshes.get_texture_width() * meshes.get_texture_height() * sizeof(V3f));
     cudaMalloc(&d_buffer_elements, width * height * super_sampling_ratio * super_sampling_ratio * sizeof(ZBuffer_element));
     cudaMalloc(&d_image, width * height * sizeof(V3f));
+    cudaMalloc(&d_image_denoise, width * height * sizeof(V3f));
 
     cudaMemcpy(d_triangles, meshes.triangles, meshes.get_num_triangles() * sizeof(Triangle), cudaMemcpyHostToDevice);
     cudaMemcpy(d_lights, meshes.light, meshes.get_num_lights() * sizeof(Light), cudaMemcpyHostToDevice);

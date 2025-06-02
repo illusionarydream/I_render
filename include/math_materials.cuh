@@ -17,6 +17,8 @@
 // * global settings
 #define BLOCK_SIZE 8
 #define BLOCK_SIZE_2D BLOCK_SIZE *BLOCK_SIZE
+#define MAX_DKERNEL_SIZE 5
+#define BLOCK_DKERNEL_SIZE BLOCK_SIZE + MAX_DKERNEL_SIZE - 1
 #define MAX 1e6
 #define MAX_mesh 8000
 #define MAX_light 10

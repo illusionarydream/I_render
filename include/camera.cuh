@@ -8,6 +8,7 @@
 #include <opencv2/opencv.hpp>
 #include "raytrace.cuh"
 #include "rasterize.cuh"
+#include "denoise.cuh"
 
 class Camera {
    public:
@@ -24,6 +25,7 @@ class Camera {
     bool if_more_kernel = false;
     bool if_show_info = false;
     bool if_texture = false;
+    bool if_denoise = true;
 
     // * for raytracing
     float russian_roulette = 0.80f;
@@ -52,6 +54,8 @@ class Camera {
 
     // all
     V3f* d_image;
+    V3f* d_image_denoise;
+    int denoise_kernel_size = 3;   // kernel size for denoise, must be odd
     int super_sampling_ratio = 4;  // cannot larger than 4
 
     // * constructors
