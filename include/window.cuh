@@ -37,6 +37,11 @@ class Window {
     int render_type;  // 0-rasterization, 1-ray tracing, 2-mixed rendering
     static int sample_Max;
 
+    // for camera
+    static V4f camera_pos;
+    static V4f camera_lookat;
+    static V4f camera_up;
+
     // for mouse callback
     static float sensitivity;
 
@@ -134,7 +139,7 @@ class Window {
             camera.setExtrinsics(V4f(0.0f, 0.0f, radius, 1.0f), V4f(0.0f, 0.0f, 0.0f, 1.0f), V4f(0.0f, -1.0f, 0.0f, 0.0f));  // initial position of the camera
 
             // * set the camera sampling
-            camera.setSamplePerPixel(sample_Max - 200);
+            camera.setSamplePerPixel(10);  // ! set to a constant
         } else if (render_type == 2) {
             // ! mixed rendering
             // * set basic parameters
@@ -192,6 +197,7 @@ class Window {
             camera.setsuper_sampling_ratio(1);
         }
     }
+
     static void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
         static bool firstMouse = true;
         static float lastX = 400, lastY = 300;
@@ -218,11 +224,6 @@ class Window {
         if (pitch < -89.0f)
             pitch = -89.0f;
 
-        // set the camera position
-        V4f camera_pos;
-        V4f camera_lookat(0.0f, 0.0f, 0.0f, 1.0f);
-        V4f camera_up;
-
         // calculate the camera position
         camera_pos[0] = radius * cos(glm::radians(yaw)) * cos(glm::radians(pitch));
         camera_pos[1] = radius * sin(glm::radians(pitch));
@@ -242,10 +243,21 @@ class Window {
         camera.setExtrinsics(camera_pos, camera_lookat, camera_up);
 
         // * adapt the camera sampling by moving velocity
-        int move_velocity = xoffset * xoffset + yoffset * yoffset;
-        int samples_per_pixel = 10 + sample_Max / (1 + 40 * move_velocity);
+        // int move_velocity = xoffset * xoffset + yoffset * yoffset;
+        // int samples_per_pixel = 50 + sample_Max / (1 + 40 * move_velocity);
 
-        camera.setSamplePerPixel(samples_per_pixel);
+        // camera.setSamplePerPixel(samples_per_pixel);
+    }
+
+    static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+        radius -= yoffset * sensitivity;
+        if (radius < 1.0f) radius = 1.0f;    // 防止摄像机距离过近
+        if (radius > 50.0f) radius = 20.0f;  // 防止摄像机距离过远
+
+        camera_pos = radius * normalize(camera_pos);
+
+        // set the camera extrinsics
+        camera.setExtrinsics(camera_pos, camera_lookat, camera_up);
     }
 
     void renderLoop(GLFWwindow* window) {
@@ -277,7 +289,7 @@ class Window {
                 camera.render_mixed(height, width, meshes, image);
 
             // Gradually restores rendering quality
-            camera.samples_per_pixel = MIN(camera.samples_per_pixel + 50, sample_Max);
+            // camera.samples_per_pixel = MIN(camera.samples_per_pixel + 20, sample_Max);
 
             glClear(GL_COLOR_BUFFER_BIT);
             glDrawPixels(width, height, GL_RGB, GL_FLOAT, image.data());
@@ -308,7 +320,8 @@ class Window {
         }
 
         // * initialize the callback function
-        glfwSetCursorPosCallback(window, mouse_callback);
+        glfwSetCursorPosCallback(window, mouse_callback);  // mouse move callback
+        glfwSetScrollCallback(window, scroll_callback);    // mouse scroll callback
 
         // * MAIN LOOP
         renderLoop(window);
@@ -325,6 +338,9 @@ class Window {
 Camera Window::camera;
 float Window::sensitivity = 0.4f;
 float Window::radius = 10.0f;
-int Window::sample_Max = 350;
+int Window::sample_Max = 100;
+V4f Window::camera_pos;
+V4f Window::camera_lookat = V4f(0.0f, 0.0f, 0.0f, 1.0f);
+V4f Window::camera_up;
 
 #endif  // WINDOW_HPP
