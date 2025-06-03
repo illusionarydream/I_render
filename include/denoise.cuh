@@ -8,6 +8,8 @@ __global__ void denoiseKernel(V3f *image,
                               const V3f *input_image,
                               const int width,
                               const int height,
-                              const int kernel_size);
+                              const int kernel_size,
+                              const int denoise_type,
+                              const float sigma_spatial);
 
 #endif  // DENOISE_CUH

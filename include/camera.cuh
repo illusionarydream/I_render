@@ -30,7 +30,7 @@ class Camera {
     // * for raytracing
     float russian_roulette = 0.80f;
     int samples_per_pixel = 100;
-    int samples_per_kernel = 1;
+    int samples_per_kernel = 5;
 
     // * for rasterization
     float ka = 0.1;
@@ -52,10 +52,14 @@ class Camera {
     Ray* d_rays;
     curandState* devStates;  // for random seed support
 
+    // denoise
+    V3f* d_image_denoise;
+    int denoise_type = 2;         // 0: median filter, 1: gaussian filter, 2: bilateral filter
+    int denoise_kernel_size = 5;  // kernel size for denoise, must be odd
+    float sigma_spatial = 1.5f;   // spatial sigma for gaussian filter
+
     // all
     V3f* d_image;
-    V3f* d_image_denoise;
-    int denoise_kernel_size = 3;   // kernel size for denoise, must be odd
     int super_sampling_ratio = 4;  // cannot larger than 4
 
     // * constructors

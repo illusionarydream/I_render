@@ -11,7 +11,8 @@ int main() {
                "../datasets/bunny_little.obj");
     // Window win(IMAGE_WIDTH, IMAGE_HEIGHT, 0,
     //    "../datasets/bunny_little.obj");
-    win.start();
+    // win.start();
+    win.renderSingleFrame("/home/illusionary/文档/计算机图形学/Rendering/I_render/images/denoise.png");
 
     return 0;
 }

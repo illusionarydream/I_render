@@ -114,13 +114,18 @@ void Camera::render_raytrace(const int width,
                                        d_image,
                                        width,
                                        height,
-                                       denoise_kernel_size);
+                                       denoise_kernel_size,
+                                       denoise_type,
+                                       sigma_spatial);
 
-        // copy the data back
-        cudaMemcpy(image.data(), d_image_denoise, image.size() * sizeof(V3f), cudaMemcpyDeviceToHost);
-    } else
-        // * no denoise
-        cudaMemcpy(image.data(), d_image, image.size() * sizeof(V3f), cudaMemcpyDeviceToHost);
+        // synchronize the device
+        cudaDeviceSynchronize();
+
+        cudaMemcpy(d_image, d_image_denoise, width * height * sizeof(V3f), cudaMemcpyDeviceToDevice);
+    }
+
+    // copy the data back
+    cudaMemcpy(image.data(), d_image, image.size() * sizeof(V3f), cudaMemcpyDeviceToHost);
 
     // free the memory
     cudaFree(d_Inv_Extrinsics);

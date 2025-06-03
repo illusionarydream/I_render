@@ -52,12 +52,7 @@ class Window {
     // ! all the mesh and camera parameters are set here
     // ! rasterization
     Window(int _width = IMAGE_WIDTH, int _height = IMAGE_HEIGHT, int render_type = 0, std::string obj_path = "", std::string texture_path = "") {
-        if (render_type == 0)
-            this->render_type = 0;
-        else if (render_type == 1)
-            this->render_type = 1;
-        else if (render_type == 2)
-            this->render_type = 2;
+        this->render_type = render_type;
         if (render_type == 0) {
             // ! rasterization
             // * set basic parameters
@@ -139,7 +134,7 @@ class Window {
             camera.setExtrinsics(V4f(0.0f, 0.0f, radius, 1.0f), V4f(0.0f, 0.0f, 0.0f, 1.0f), V4f(0.0f, -1.0f, 0.0f, 0.0f));  // initial position of the camera
 
             // * set the camera sampling
-            camera.setSamplePerPixel(5);  // ! set to a constant
+            camera.setSamplePerPixel(5);  // ! set to a constant, should larger than 5
         } else if (render_type == 2) {
             // ! mixed rendering
             // * set basic parameters
@@ -284,11 +279,11 @@ class Window {
             }
 
             if (render_type == 1)
-                camera.render_raytrace(height, width, meshes, image);
+                camera.render_raytrace(width, height, meshes, image);
             else if (render_type == 0)
-                camera.render_rasterization(height, width, meshes, image);
+                camera.render_rasterization(width, height, meshes, image);
             else if (render_type == 2)
-                camera.render_mixed(height, width, meshes, image);
+                camera.render_mixed(width, height, meshes, image);
 
             // Gradually restores rendering quality
             // camera.samples_per_pixel = MIN(camera.samples_per_pixel + 20, sample_Max);
@@ -298,6 +293,35 @@ class Window {
             glfwSwapBuffers(window);
             glfwPollEvents();
         }
+    }
+
+    void renderSingleFrame(std::string filename) {
+        std::vector<V3f> image(height * width);
+
+        // set the camera position
+        camera_pos = toV4f(radius * normalize(V3f(1.0f, 0.0f, -0.5f)), 1.0f);
+        camera_lookat = V4f(0.0f, 0.0f, 0.0f, 1.0f);
+        camera.setExtrinsics(camera_pos, camera_lookat, V4f(0.0f, 1.0f, 0.0f, 0.0f));  // initial position of the camera
+
+        // prepare the camera parameters
+        if (render_type == 1)
+            camera.setGPUParameters_raytrace(meshes, width, height);
+        else if (render_type == 0)
+            camera.setGPUParameters_rasterize(meshes, width, height);
+        else if (render_type == 2) {
+            camera.setGPUParameters_raytrace(meshes, width, height);
+            camera.setGPUParameters_rasterize(meshes, width, height);
+        }
+
+        // render the scene
+        if (render_type == 1)
+            camera.render_raytrace(width, height, meshes, image);
+        else if (render_type == 0)
+            camera.render_rasterization(width, height, meshes, image);
+        else if (render_type == 2)
+            camera.render_mixed(width, height, meshes, image);
+
+        camera.storeImage(filename, width, height, image);
     }
 
     void start() {
