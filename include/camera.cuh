@@ -52,15 +52,20 @@ class Camera {
     Ray* d_rays;
     curandState* devStates;  // for random seed support
 
-    // denoise
-    V3f* d_image_denoise;
-    int denoise_type = 2;         // 0: median filter, 1: gaussian filter, 2: bilateral filter
-    int denoise_kernel_size = 5;  // kernel size for denoise, must be odd
-    float sigma_spatial = 1.5f;   // spatial sigma for gaussian filter
-
     // all
     V3f* d_image;
     int super_sampling_ratio = 4;  // cannot larger than 4
+
+    // * denoise
+    V3f* d_image_denoise;
+    int denoise_type = 3;         // 0: median filter, 1: gaussian filter, 2: bilateral filter, 3: deeplearning denoise
+    int denoise_kernel_size = 5;  // kernel size for denoise, must be odd
+    float sigma_spatial = 1.5f;   // spatial sigma for gaussian filter
+
+    // model
+    std::string model_path = "";             // path to the denoise model
+    torch::Device device = torch::kCUDA;     // use CUDA device
+    torch::jit::script::Module denoise_net;  // for denoise
 
     // * constructors
     Camera() {
@@ -211,6 +216,27 @@ class Camera {
                       const int height,
                       const Mesh& meshes,
                       std::vector<V3f>& image);
+
+    // denoise model
+    void loadDenoiseModel() {
+        if (if_show_info)
+            printf("Camera::loadModel\n");
+        try {
+            denoise_net = torch::jit::load(model_path);
+            denoise_net.eval();
+        } catch (const c10::Error& e) {
+            fprintf(stderr, "Error loading the model: %s\n", e.what());
+        }
+
+        // print model parameters
+        if (if_show_info)
+            for (const auto& pair : denoise_net.named_parameters()) {
+                std::cout << pair.name << " " << pair.value.requires_grad() << std::endl;
+            }
+
+        // move model to GPU
+        denoise_net.to(device);
+    }
 };
 
 #endif  // CAMERA_CUH

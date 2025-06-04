@@ -1,3 +1,6 @@
 .vscode/
 build/
 output/
+datasets/local/
+log/
+__pycache__

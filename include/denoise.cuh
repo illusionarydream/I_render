@@ -4,6 +4,10 @@
 #include <cuda_runtime.h>  // Include the necessary CUDA runtime header file
 #include "math_materials.cuh"
 
+// for torch
+#include <torch/torch.h>
+#include <torch/script.h>
+
 __global__ void denoiseKernel(V3f *image,
                               const V3f *input_image,
                               const int width,

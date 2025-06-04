@@ -105,7 +105,7 @@ void Camera::render_raytrace(const int width,
     // synchronize the device
     cudaDeviceSynchronize();
 
-    if (if_denoise) {
+    if (if_denoise && denoise_type < 3) {
         // * denoise
         if (if_show_info)
             printf("Camera::denoise\n");
@@ -122,6 +122,22 @@ void Camera::render_raytrace(const int width,
         cudaDeviceSynchronize();
 
         cudaMemcpy(d_image, d_image_denoise, width * height * sizeof(V3f), cudaMemcpyDeviceToDevice);
+    } else if (if_denoise && denoise_type == 3) {
+        // * denoise with neural network
+        if (if_show_info)
+            printf("Camera::denoise with neural network\n");
+
+        // convert the image to torch tensor
+        torch::Tensor image_tensor = torch::from_blob(d_image, {height, width, 3},
+                                                      torch::TensorOptions().device(device).dtype(torch::kFloat32));
+        image_tensor = image_tensor.permute({2, 0, 1}).unsqueeze(0);  // change to 1xCxHxW
+
+        // run the denoise network
+        torch::Tensor output_tensor = denoise_net.forward({image_tensor}).toTensor();
+
+        // convert the output tensor back to float array
+        output_tensor = output_tensor.squeeze(0).permute({1, 2, 0}).contiguous();  // change to HxWxC
+        cudaMemcpy(d_image, output_tensor.data_ptr<float>(), width * height * 3 * sizeof(float), cudaMemcpyDeviceToDevice);
     }
 
     // copy the data back

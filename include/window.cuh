@@ -51,7 +51,12 @@ class Window {
    public:
     // ! all the mesh and camera parameters are set here
     // ! rasterization
-    Window(int _width = IMAGE_WIDTH, int _height = IMAGE_HEIGHT, int render_type = 0, std::string obj_path = "", std::string texture_path = "") {
+    Window(int _width = IMAGE_WIDTH,
+           int _height = IMAGE_HEIGHT,
+           int render_type = 0,
+           std::string obj_path = "",
+           std::string texture_path = "",
+           std::string denoise_model_path = "") {
         this->render_type = render_type;
         if (render_type == 0) {
             // ! rasterization
@@ -96,6 +101,12 @@ class Window {
             // * set basic parameters
             width = _width;
             height = _height;
+
+            // * load denoise model
+            camera.model_path = denoise_model_path;
+            if (camera.if_denoise == true && camera.denoise_type == 3) {  // 3 means using the denoise model
+                camera.loadDenoiseModel();
+            }
 
             // * read the mesh
             auto triangles1 = load_obj(obj_path, false, V3f(0.0f, -1.5f, -2.0f), 3.0f);
@@ -322,6 +333,68 @@ class Window {
             camera.render_mixed(width, height, meshes, image);
 
         camera.storeImage(filename, width, height, image);
+    }
+
+    void renderMultipleFrame(std::string filename_prefix) {
+        const int theta_steps = 6;  // horizontal angle divisions
+        const int phi_steps = 4;    // vertical angle divisions
+        const float PI = 3.1415926f;
+
+        V3f center(0.0f, 0.0f, 0.0f);  // Target point the camera looks at
+
+        // prepare the camera parameters
+        if (render_type == 1)
+            camera.setGPUParameters_raytrace(meshes, width, height);
+        else if (render_type == 0)
+            camera.setGPUParameters_rasterize(meshes, width, height);
+        else if (render_type == 2) {
+            camera.setGPUParameters_raytrace(meshes, width, height);
+            camera.setGPUParameters_rasterize(meshes, width, height);
+        }
+
+        // base index for the frames
+        int frame_idx = 144;
+
+        for (int i = 0; i < phi_steps; ++i) {
+            float phi = PI * (i + 1) / (phi_steps + 1);  // avoid poles
+
+            for (int j = 0; j < theta_steps; ++j) {
+                float theta = 2.0f * PI * j / theta_steps;
+
+                // Spherical to Cartesian
+                float x = radius * std::sin(phi) * std::cos(theta);
+                float y = radius * std::cos(phi);
+                float z = radius * std::sin(phi) * std::sin(theta);
+                V3f eye(x, y, z);
+
+                printf("Rendering frame %d: Camera position: (%f, %f, %f)\n", frame_idx, eye[0], eye[1], eye[2]);
+
+                // Set global camera parameters
+                camera_pos = toV4f(eye, 1.0f);
+                camera_lookat = toV4f(center, 1.0f);
+
+                // Calculate up vector
+                glm::vec3 view_dir = glm::normalize(glm::vec3(center[0] - x, center[1] - y, center[2] - z));
+                glm::vec3 world_up(0.0f, 1.0f, 0.0f);
+                glm::vec3 right = glm::normalize(glm::cross(world_up, view_dir));
+                glm::vec3 up = glm::normalize(glm::cross(view_dir, right));
+
+                camera_up[0] = up.x;
+                camera_up[1] = up.y;
+                camera_up[2] = up.z;
+                camera_up[3] = 0.0f;
+
+                // Set camera pose
+                camera.setExtrinsics(camera_pos, camera_lookat, camera_up);
+
+                // Construct output filename, e.g., "output_0000.png"
+                char buffer[256];
+                sprintf(buffer, "%s_%04d.png", filename_prefix.c_str(), frame_idx++);
+
+                // Render the scene and save the image
+                renderSingleFrame(buffer);
+            }
+        }
     }
 
     void start() {
