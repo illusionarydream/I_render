@@ -310,19 +310,19 @@ class Window {
         std::vector<V3f> image(height * width);
 
         // set the camera position
-        camera_pos = toV4f(radius * normalize(V3f(1.0f, 0.0f, -0.5f)), 1.0f);
-        camera_lookat = V4f(0.0f, 0.0f, 0.0f, 1.0f);
-        camera.setExtrinsics(camera_pos, camera_lookat, V4f(0.0f, 1.0f, 0.0f, 0.0f));  // initial position of the camera
+        // camera_pos = toV4f(radius * normalize(V3f(1.0f, 0.0f, -0.5f)), 1.0f);
+        // camera_lookat = V4f(0.0f, 0.0f, 0.0f, 1.0f);
+        // camera.setExtrinsics(camera_pos, camera_lookat, V4f(0.0f, 1.0f, 0.0f, 0.0f));  // initial position of the camera
 
         // prepare the camera parameters
-        if (render_type == 1)
-            camera.setGPUParameters_raytrace(meshes, width, height);
-        else if (render_type == 0)
-            camera.setGPUParameters_rasterize(meshes, width, height);
-        else if (render_type == 2) {
-            camera.setGPUParameters_raytrace(meshes, width, height);
-            camera.setGPUParameters_rasterize(meshes, width, height);
-        }
+        // if (render_type == 1)
+        //     camera.setGPUParameters_raytrace(meshes, width, height);
+        // else if (render_type == 0)
+        //     camera.setGPUParameters_rasterize(meshes, width, height);
+        // else if (render_type == 2) {
+        //     camera.setGPUParameters_raytrace(meshes, width, height);
+        //     camera.setGPUParameters_rasterize(meshes, width, height);
+        // }
 
         // render the scene
         if (render_type == 1)
@@ -353,7 +353,7 @@ class Window {
         }
 
         // base index for the frames
-        int frame_idx = 144;
+        int frame_idx = 0;
 
         for (int i = 0; i < phi_steps; ++i) {
             float phi = PI * (i + 1) / (phi_steps + 1);  // avoid poles

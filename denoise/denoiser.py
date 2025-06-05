@@ -8,7 +8,7 @@ from torchvision.utils import save_image
 import torch.nn.init as init
 
 
-from model import DnCNN
+from model import DnCNN, DAE
 from dataloader import ImagePairDataset
 
 from skimage.metrics import structural_similarity as ssim
@@ -38,7 +38,9 @@ class Denoiser:
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
 
         if self.model_name == "dncnn":
-            self.model = DnCNN(channels=3, num_of_layers=17).to(self.device)
+            self.model = DnCNN(channels=3, num_of_layers=7).to(self.device)
+        elif self.model_name == "dae":
+            self.model = DAE().to(self.device)
         else:
             raise NotImplementedError(f"Model '{self.model_name}' not implemented")
 
@@ -194,28 +196,29 @@ class Denoiser:
         print(f"Model exported to {path}")
 
 
-def train_main():
+def train_main(model_type="dncnn"):
     train_file_path = "datasets/local/train_list.txt"
-    denoiser = Denoiser(model_name="dncnn")
+    denoiser = Denoiser(model_name=model_type)
     denoiser.prepare_dataloader(train_file_path, batch_size=4, val_ratio=0.1)
     denoiser.train(
-        num_epochs=200,
-        learning_rate=5e-4,
+        num_epochs=100,
+        learning_rate=2e-4,
         eval_every=5,
     )
-    denoiser.save_model("log/dncnn.pth")
+    denoiser.save_model(f"log/{model_type}.pth")
 
 
-def test_single_image():
-    denoiser = Denoiser(model_name="dncnn")
-    denoiser.load_model("log/dncnn.pth")
+def test_single_image(model_type="dncnn"):
+    denoiser = Denoiser(model_name=model_type)
+    denoiser.load_model(f"log/{model_type}.pth")
     denoiser.denoise_single_image(
-        "images/denoise.png",
+        "images/denoise_.png",
         save_path="log/results/denoised_result.png",
     )
-    denoiser.export_model("log/dncnn.pt")
+    denoiser.export_model(f"log/{model_type}.pt")
 
 
 if __name__ == "__main__":
-    train_main()
-    # test_single_image()
+    model_type = "dncnn"
+    # train_main(model_type=model_type)
+    test_single_image(model_type=model_type)
