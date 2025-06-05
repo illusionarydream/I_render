@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <chrono>
 
 #include "camera.cuh"
 
@@ -355,6 +356,9 @@ class Window {
         // base index for the frames
         int frame_idx = 0;
 
+        // time start
+        auto start_time = std::chrono::high_resolution_clock::now();
+
         for (int i = 0; i < phi_steps; ++i) {
             float phi = PI * (i + 1) / (phi_steps + 1);  // avoid poles
 
@@ -395,6 +399,11 @@ class Window {
                 renderSingleFrame(buffer);
             }
         }
+
+        // time end
+        auto end_time = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = end_time - start_time;
+        std::cout << "Rendering fps: " << 24.0f / elapsed.count() << std::endl;
     }
 
     void start() {
